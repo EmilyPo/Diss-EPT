@@ -1,0 +1,233 @@
+---
+title: "Network Fitting"
+author: "Emily Pollock"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+library(ergm.ego)
+library(EpiModel)
+library(parallel)
+library(egonet)
+library(here)
+source("~/Documents/Dissertation/R/Duration/Functions/finalEgodataPrep.R") # generates the egodata objects
+source("~/Documents/Dissertation/R/Duration/Functions/reldur_params.R") # object with params of interest 
+```
+
+# Session Info
+```{r}
+sessioninfo::package_info()
+```
+
+# General Controls  
+
+__need to update duration targets w/ estimated means from parametric model__  
+__but then will also need to use CKs correction in-simiulation find undelrying relationship length in presense of mortality__  
+```{r}
+np <- detectCores()
+# Set parallel.type
+if (np==0) ptype=NULL else ptype='PSOCK'
+
+dat <- reldur_params()
+ppopsize <- dat$ppopsize
+MCMCinterval <- dat$mcmcInterval
+MCMCburnin <- dat$mcmcBurnin
+
+time.step <- dat$time.step
+age.width <- dat$age.width
+dissolution <- dat$dissolution
+#mRate <- dat$mRate
+
+duration.marcoh <- dat$duration.marcoh
+duration.other <- dat$duration.other
+
+DissolutionMarcoh <- dissolution_coefs(dissolution=dissolution, 
+                                       duration=duration.marcoh)
+
+DissolutionOther <- dissolution_coefs(dissolution=dissolution, 
+                                      duration=duration.other)
+```
+
+# Some Attribute Adjustments  
+* make age/sex attribute (i.e. 15F, 23M)
+* 
+
+```{r}
+egos <- egodat_marcoh$egos
+egos$agesex <- ifelse(egos$male==1, paste(egos$age, "M", sep=""), paste(egos$age, "F", sep=""))
+egos$agecatsex <- ifelse(egos$male==1, paste(egos$agecat, "M", sep=""), paste(egos$agecat, "F", sep=""))
+egos$ageF <- ifelse(egos$male==1, paste(egos$age, "M", sep=""), paste(egos$age, "F", sep=""))
+egos$ageM <- ifelse(egos$male==1, paste(egos$age, "M", sep=""), paste(egos$age, "F", sep=""))
+
+
+egodat_marcoh$egos <- egos
+egodat_other$egos <- egos
+```
+
+# Marriage/Cohab Network {.tabset .tabset-pills .tabset-fade}
+
+## Ergm.Ego Estimation & Setup
+```{r, eval=F}
+fit.marcoh <- ergm.ego(egodat_marcoh ~ edges + 
+                         nodecov("age") + 
+                         nodecov("agesquared") +
+                         absdiff(~sqrtage + 0.14505*(male==0)) + 
+                         nodefactor("deg.other.binary") +
+                         offset(nodematch("male", diff = FALSE)) +
+                         #offset(nodefactor("debuted", levels=1)) + 
+                         offset("concurrent"), 
+                         offset.coef = c(-Inf, -Inf), #offset.coef = c(-Inf, -Inf, -Inf),
+                         control = 
+                         control.ergm.ego(ppop.wt = "sample", ppopsize = ppopsize, 
+                                          ergm.control = 
+                                            control.ergm(MCMLE.maxit = 200,
+                                                         MCMC.interval = MCMCinterval, 
+                                                         MCMC.burnin = MCMCburnin,
+                                                         parallel = np,
+                                                         parallel.type = ptype)))
+
+saveRDS(fit.marcoh, here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "fit.marcoh.rds"))
+
+mpop <- environment(fit.marcoh$ergm.formula)$popnw
+```
+
+```{r}
+fit.marcoh <- readRDS(here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "fit.marcoh.rds"))
+marcoh.netest <- ego.netest(fit.marcoh, DissolutionMarcoh)
+summary(fit.marcoh)
+```
+
+## MCMC Diagnostics / GOF
+```{r, warning=F, message=F, comment = F, results='hide', fig.keep='all'}
+mcmc.diagnostics(fit.marcoh)
+```
+
+```{r, eval=F}
+gof <- gof(fit.marcoh, GOF = "model")
+saveRDS(gof, here("Setup", "FinalNetworks", "objects", "full", "nodefactor","gof.m.rds"))
+```
+
+```{r}
+gof <- readRDS(here("Setup", "FinalNetworks", "objects", "full","nodefactor", "gof.m.rds"))
+plot(gof)
+```
+
+## Static Diagnostics 
+
+```{r, eval=F}
+static.marcoh <- netdx(marcoh.netest, nsims = 5000, dynamic = FALSE)
+saveRDS(static.marcoh, here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "static.m.rds"))
+```
+
+```{r}
+static.marcoh <- readRDS(here("Setup", "FinalNetworks", "objects", "full", "nodefactor","static.m.rds"))
+static.marcoh
+plot(static.marcoh)
+```
+
+## Dynamic Diagnostics 
+```{r, eval=F}
+dynamic.marcoh <- netdx(marcoh.netest, nsims = 5, nsteps = 5000, 
+                        set.control.ergm = control.simulate.ergm(MCMC.burnin=1e5, MCMC.interval=1e5),
+                        set.control.stergm = control.simulate.network(MCMC.burnin.min=1e5,  MCMC.burnin.max=1e5))
+saveRDS(dynamic.marcoh, here("Setup", "FinalNetworks", "objects", "full",  "nodefactor","dynamic.m.rds"))
+```
+
+```{r}
+dynamic.marcoh <- readRDS(here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "dynamic.m.rds"))
+dynamic.marcoh
+plot(dynamic.marcoh)
+plot(dynamic.marcoh, type = "duration")
+plot(dynamic.marcoh, type = "dissolution")
+```
+
+
+# Other Network {.tabset .tabset-pills .tabset-fade}
+
+## Fit
+```{r, eval=F} 
+x <- control.ergm.ego(ppopsize = 1, ppop.wt = "sample",
+                      ergm.control = control.ergm(MCMLE.maxit = 200,
+                                                  MCMC.interval = MCMCinterval,
+                                                  MCMC.burnin = MCMCburnin))
+
+x$ppopsize <- mpop
+
+fit.other <- ergm.ego(egodat_other ~ edges + 
+                        nodefactor("agecat") + 
+                        absdiff("sqrtage") + 
+                        nodefactor("deg.marcoh.binary") +
+                        concurrent +
+                        offset(nodematch("male", diff = FALSE)) +
+                        offset(nodefactor("debuted", levels=1)),
+                        offset.coef = c(-Inf, -Inf),
+                        control = x)
+
+
+saveRDS(fit.other, here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "fit.other.rds"))
+```
+
+
+```{r}
+fit.other <- readRDS(here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "fit.other.rds"))
+other.netest <- ego.netest(fit.other, DissolutionOther)
+summary(fit.other)
+```
+
+## MCMC Diagnostics / GOF
+```{r, warning=F, message=F, comment = F, results='hide', fig.keep='all'}
+mcmc.diagnostics(fit.other)
+```
+
+```{r, eval=F}
+gof.o <- gof(fit.other, GOF = "model")
+saveRDS(gof.o, here("Setup", "FinalNetworks", "objects", "full", "nodefactor","gof.o.rds"))
+```
+
+```{r}
+gof.o <- readRDS(here("Setup", "FinalNetworks", "objects", "full", "nodefactor","gof.o.rds"))
+plot(gof.o)
+```
+
+## Static Diagnostic 
+```{r, eval=F}
+static.other <- netdx(other.netest, nsims = 5000, dynamic = FALSE)
+saveRDS(static.other, here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "static.other.rds"))
+```
+
+```{r}
+static.other <- readRDS(here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "static.other.rds"))
+static.other
+plot(static.other)
+```
+
+## Dynamic Diagnostic
+
+```{r, eval=F}
+dynamic.other <- netdx(other.netest, nsims = 5, nsteps = 5000,
+                       set.control.ergm = control.simulate.ergm(MCMC.burnin=1e5, 
+                                                                MCMC.interval=1e5),
+                       set.control.stergm = control.simulate.network(MCMC.burnin.min=1e5,
+                                                                     MCMC.burnin.max=1e5))
+saveRDS(dynamic.other, here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "dynamic.other.rds"))
+```
+
+```{r}
+dynamic.other <- readRDS(here("Setup", "FinalNetworks", "objects", "full", "nodefactor","dynamic.other.rds"))
+dynamic.other
+plot(dynamic.other)
+plot(dynamic.other, type = "duration")
+plot(dynamic.other, type = "dissolution")
+```
+
+```{r, fullnetest}
+netests <- list(marcoh.netest, other.netest)
+saveRDS(netests, here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "netests_nodefactor.rds"))
+```

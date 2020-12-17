@@ -1,0 +1,483 @@
+---
+title: "Sexual Behaviors"
+author: "Emily Pollock"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output: 
+  html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        code_folding: hide
+---
+
+```{r ego-prep, echo=FALSE, message=FALSE, warning=FALSE}
+library(ergm.ego)
+library(tidyverse)
+library(reshape2)
+library(srvyr)
+library(plotly)
+library(kableExtra)
+
+
+##### import data for egodata ########
+egodat <- readRDS("~/nsfg_data_cleaning/Objects/fullEgodata.rds")
+egodat$egos <- egodat$egos %>%
+    mutate(agerange = ifelse(age >= 15 & age < 25, 1, 
+                           ifelse(age >= 25 & age < 35, 2, 
+                                   ifelse(age >= 35 & age < 45, 3, NA))))
+#table(egodat$egos$agecat, egodat$egos$agerange)
+
+##### make ego data objects #########
+## all actives
+dat <- egodata(egos=egodat$egos, alters=egodat$altersAllActive, egoWt = egodat$egos$weight, egoIDcol = "ego")
+## mar/coh
+datMarcoh <- egodata(egos=egodat$egos, alters=egodat$altersMarCoh, egoWt = egodat$egos$weight, egoIDcol = "ego")
+## others 
+datOther <- egodata(egos=egodat$egos, alters=egodat$altersOther, egoWt = egodat$egos$weight, egoIDcol = "ego")
+## one times 
+datOTs <- egodata(egos=egodat$egos, alters=egodat$altersOnce, egoWt = egodat$egos$weight, egoIDcol = "ego")
+
+# full data
+#nsfg <- readRDS("~/NSFG_DATA/Full/nsfg_complete.rds")
+svy <- as_survey_design(egodat$egos, weights = weight, ids = ego)
+
+actives <- svy %>% filter(pdeg.active >0)
+```
+
+# Always/Never/Sometimes Condoms {.tabset .tabset-pills .tabset-fade}
+## Casual Relationships
+### Agecat
+```{r ans}
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.other >= 1) %>%
+  group_by(agecat, cat.cond) %>%
+  summarize(count=survey_total()) %>%
+  mutate(prop = count/sum(count)) %>%
+  ggplot(aes(x=agecat, y=prop, group=cat.cond, color=cat.cond)) +
+  geom_point() +
+  geom_line() 
+
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.other >= 1) %>%
+  group_by(age, cat.cond) %>%
+  summarize(count=survey_total()) %>%
+  mutate(prop = count/sum(count)) %>%
+  ggplot(aes(x=age, y=prop, group=cat.cond, color=cat.cond)) +
+  geom_point() +
+  geom_line() 
+```
+
+### Agecat / Race
+```{r ans2}
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.other >= 1) %>%
+  group_by(agecat, race, cat.cond) %>%
+  summarize(count=survey_total()) %>%
+  mutate(prop = count/sum(count)) %>%
+  ggplot(aes(x=race, y=prop, group=cat.cond, color=cat.cond)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~agecat)
+```
+
+### "Sometimes" Range
+```{r sometimes-cas}
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.other >= 1, cat.cond=="Sometimes") %>%
+  summarise(mean = survey_mean(p.cond), m=survey_quantile(p.cond, c(0.25, 0.5, 0.75))) %>%
+  kable() %>%
+  kable_styling()
+```
+
+## Marriage/Cohabs
+### Age 
+```{r ans-m}
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.marcoh==1) %>%
+  group_by(agecat, cat.cond) %>%
+  summarize(count=survey_total()) %>%
+  mutate(prop = count/sum(count)) %>%
+  ggplot(aes(x=agecat, y=prop, group=cat.cond, color=cat.cond)) +
+  geom_point() +
+  geom_line()
+
+  
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.marcoh==1) %>%
+  group_by(age, cat.cond) %>%
+  summarize(count=survey_total()) %>%
+  mutate(prop = count/sum(count)) %>%
+  ggplot(aes(x=age, y=prop, group=cat.cond, color=cat.cond)) +
+  geom_point() +
+  geom_line()
+
+
+t <- svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.marcoh==1) %>%
+  group_by(agecat, cat.cond) %>%
+  summarize(count=survey_total()) %>%
+  filter(cat.cond=="Always")
+```
+
+### Agecat / Race
+```{r ans2-m}
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.marcoh==1) %>%
+  group_by(agecat, race, cat.cond) %>%
+  summarize(count=survey_total()) %>%
+  group_by(agecat, race) %>%
+  mutate(prop = count/sum(count)) %>%
+  ggplot(aes(x=race, y=prop, group=cat.cond, color=cat.cond)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~agecat)
+```
+
+### "Sometimes" Range
+```{r sometimes-mar}
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.marcoh== 1, cat.cond=="Sometimes") %>%
+  summarise(mean = survey_mean(p.cond), m=survey_quantile(p.cond, c(0.25, 0.5, 0.75))) %>%
+  kable() %>%
+  kable_styling()
+```
+
+# Sex Acts Per Week {.tabset .tabset-pills .tabset-fade}
+## Casual
+### Age  
+```{r cas-acts-age}
+meansex <- svy %>% 
+  filter(deg.other >=1, sex4wk<998) %>% 
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci")) 
+  
+svy %>% 
+  filter(deg.other >= 1, sex4wk<998) %>%
+  group_by(agecat) %>%
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci")) %>%
+  ggplot(aes(x=agecat, y=mean, color=agecat)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9)) +
+  ggtitle("Sex Acts Per Week by Agecat") 
+
+  
+svy %>% 
+  filter(deg.other >= 1, sex4wk<998) %>%
+  group_by(age) %>%
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci")) %>%
+  ggplot(aes(x=age, y=mean, color=age)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9)) +
+  ggtitle("Sex Acts Per Week by Age") 
+```
+
+
+### Age / Race  
+```{r cas-acts-race}
+svy %>% 
+  filter(deg.other >= 1, sex4wk<998) %>%
+  group_by(race, agecat) %>%
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci")) %>%
+  ggplot(aes(x=race, y=mean, color=race)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9)) +
+  facet_wrap(~agecat) +
+  ggtitle("Sex Acts Per Week by Agecat/Race") 
+```
+
+## Marriage/Cohab
+### Age 
+```{r mar-acts}
+meansex <- svy %>% 
+  filter(deg.marcoh==1, sex4wk<998) %>% 
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci"))
+  
+svy %>% 
+  filter(deg.marcoh == 1, sex4wk<998) %>%
+  group_by(agecat) %>%
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci")) %>%
+  ggplot(aes(x=agecat, y=mean, color=agecat)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9)) +
+  ggtitle("Sex Acts Per Week by Agecat") 
+
+svy %>% 
+  filter(deg.marcoh == 1, sex4wk<998) %>%
+  group_by(age) %>%
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci")) %>%
+  ggplot(aes(x=age, y=mean, color=age)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9)) +
+  ggtitle("Sex Acts Per Week by Age") 
+```
+
+### Age / Race 
+```{r mar-acts-race}
+svy %>% 
+  filter(deg.other >= 1, sex4wk<998) %>%
+  group_by(race, agecat) %>%
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci")) %>%
+  ggplot(aes(x=race, y=mean, color=race)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9)) +
+  facet_wrap(~agecat) +
+  ggtitle("Sex Acts Per Week by Agecat/Race") +
+  ylim(0,3)
+```
+
+# old - By Age Range (Condensed Age Categories)  
+1 = 15-24 year olds  
+2 = 25-34 year olds  
+3 = 35-44 year olds  
+
+## Degree Dist {.tabset .tabset-pills .tabset-fade}  
+
+this is using the egodata used in ch 1 for demography sims - but I should probably either add back in the over-45 alters for the "typical" 35-44 year old experience? or remove older alters for lower ages too (i.e. over 25 years old in youngest...)  
+
+```{r deg-agerange}
+degs <- svy %>% 
+        mutate(sex=as.factor(sex), deg.marcoh=as.factor(deg.marcoh), deg.other=as.factor(deg.other), agerange=as.factor(agerange)) %>%
+        group_by(agerange, sex, deg.marcoh, deg.other, .drop = FALSE) %>% 
+        summarize(n = survey_total()) %>% 
+        group_by(agerange, sex) %>%
+        mutate(prop = n/sum(n)) %>%
+        select(-n, -n_se) %>%
+        pivot_wider(names_from = deg.other, values_from=prop) 
+
+degs <- degs[,-c(1:2)]
+degs[,2:5] <- round(degs[,2:5],3)
+
+degs %>%
+  kable() %>%
+  kable_styling("striped") %>%
+  pack_rows("Age Range 1", 1, 4) %>%
+  pack_rows("Females", 1, 2) %>%
+  pack_rows("Males", 3, 4) %>%
+  pack_rows("Age Range 2", 5, 8) %>%
+  pack_rows("Age Range 3", 9, 12) %>%
+  pack_rows("Females", 5, 6) %>%
+  pack_rows("Males", 7, 8) %>%
+  pack_rows("Females", 9, 10) %>%
+  pack_rows("Males", 11, 12) %>%
+  add_header_above(c(" "=1, "Deg Casual"=4))
+
+```
+
+## Condoms: Proportion Always/Never/Sometimes {.tabset .tabset-pills .tabset-fade}
+### Casual
+```{r cascondoms-agerange}
+cas.condoms <- svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.other >= 1) %>%
+  group_by(agerange, cat.cond) %>%
+  summarize(count=survey_total()) %>%
+  mutate(prop = count/sum(count)) %>%
+  ggplot(aes(x=cat.cond, y=prop, fill=cat.cond)) +
+  geom_col() +
+  facet_wrap(~agerange)
+
+ggplotly(cas.condoms)
+
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.other >= 1, cat.cond=="Sometimes") %>%
+  group_by(agerange) %>%
+  summarise(mean = round(survey_mean(p.cond),2), m=round(survey_quantile(p.cond, c(0.25, 0.5, 0.75)), 3)) %>%
+  kable(caption="Distribution of Sometimes Condoms") %>%
+  kable_styling()
+```
+### Marriage/Cohab  
+```{r marcondoms-agerange}
+mar.condoms <- svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.marcoh >= 1) %>%
+  group_by(agerange, cat.cond) %>%
+  summarize(count=survey_total()) %>%
+  mutate(prop = count/sum(count)) %>%
+  ggplot(aes(x=cat.cond, y=prop, fill=cat.cond)) +
+  geom_col() +
+  facet_wrap(~agerange)
+
+ggplotly(mar.condoms)
+
+svy %>% 
+  mutate(cat.cond = as.factor(ifelse(p.cond==0, "Never", ifelse(p.cond==1, "Always", "Sometimes")))) %>%
+  filter(deg.marcoh == 1, cat.cond=="Sometimes") %>%
+  group_by(agerange) %>%
+  summarise(mean = round(survey_mean(p.cond),2), m=round(survey_quantile(p.cond, c(0.25, 0.5, 0.75)), 3)) %>%
+  kable(caption="Distribution of Sometimes Condoms") %>%
+  kable_styling()
+```
+
+## Sex Acts Per Week {.tabset .tabset-pills .tabset-fade}   
+### Casual  
+```{r acts-agerange-casual}
+cas.acts <- svy %>% 
+  filter(deg.other >= 1, sex4wk<998) %>%
+  mutate(agerange = as.factor(agerange)) %>%
+  group_by(agerange) %>%
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci")) %>%
+  ggplot(aes(x=agerange, y=mean, color=agerange)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9)) +
+  ggtitle("Sex Acts Per Week by Age Range") 
+
+ggplotly(cas.acts)
+```
+
+### Marriage/Cohab  
+```{r acts-agerange-marcoh}
+mar.acts <- svy %>% 
+  filter(deg.marcoh == 1, sex4wk<998) %>%
+  mutate(agerange = as.factor(agerange)) %>%
+  group_by(agerange) %>%
+  summarize(mean = survey_mean(sex4wk/4, vartype="ci")) %>%
+  ggplot(aes(x=agerange, y=mean, color=agerange)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9)) +
+  ggtitle("Sex Acts Per Week by Age Range") 
+
+ggplotly(mar.acts)
+```
+
+# old - Proportion of Sex Acts w/ Condom in Last Week 
+
+## Causal Relationships {.tabset .tabset-pills .tabset-fade}
+### Age  
+```{r conds_cas_age, message=FALSE, warning=FALSE}
+cas.agecat.med <- svy %>% 
+  filter(deg.other >= 1) %>% 
+  group_by(agecat) %>%
+  summarize(med = survey_median(p.cond, vartype=NULL))
+
+cas.agecat <- svy %>% 
+  filter(deg.other >= 1) %>% 
+  group_by(agecat) %>%
+  summarize(mean = survey_mean(p.cond, vartype="ci")) %>%
+  ggplot(aes(x=agecat, y=mean)) +
+    geom_point() +
+    geom_line() +
+    geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9))+
+  geom_point(data=cas.agecat.med, aes(y=med), color="blue")
+  
+ggplotly(cas.agecat)
+```
+
+
+### Race  
+```{r condomsracecas, message=FALSE, warning=FALSE}
+cas.race.med <- svy %>% 
+  filter(deg.other >= 1) %>% 
+  group_by(race) %>%
+  summarize(med = survey_median(p.cond, vartype=NULL))
+
+cas.race <- svy %>% 
+  filter(deg.other >= 1) %>% 
+  group_by(race) %>%
+  summarize(mean = survey_mean(p.cond, vartype="ci")) %>%
+  ggplot(aes(x=race, y=mean)) +
+    geom_point() +
+    geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9))+
+  geom_point(data=cas.race.med, aes(y=med), color="blue")
+  
+ggplotly(cas.race)
+```
+
+
+### Activity Level  
+```{r, message=FALSE, warning=FALSE}
+cas.deg.med <- svy %>% 
+  filter(deg.other >= 1) %>% 
+  group_by(deg.other) %>%
+  summarize(med = survey_median(p.cond, vartype=NULL))
+
+cas.deg <- svy %>% 
+  filter(deg.other >= 1) %>% 
+  group_by(deg.other) %>%
+  summarize(mean = survey_mean(p.cond, vartype="ci")) %>%
+  ggplot(aes(x=deg.other, y=mean)) +
+    geom_point() +
+    geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9))+
+  geom_point(data=cas.deg.med, aes(y=med), color="blue")
+  
+ggplotly(cas.deg)
+
+```
+
+### Joint  
+```{r condsjoint, message=FALSE, warning=FALSE}
+cas.joint <- svy %>% 
+  filter(deg.other >= 1) %>% 
+  mutate(deg.other=as.factor(deg.other)) %>%
+  group_by(deg.other, agecat, race) %>%
+  summarize(mean = survey_mean(p.cond, vartype=NULL)) %>%
+  ggplot(aes(x=agecat, y=mean, group=deg.other, color=deg.other)) +
+    geom_point() +
+  facet_wrap(~race)
+  
+ggplotly(cas.joint)
+
+```
+
+## Marriage/Cohabs {.tabset .tabset-pills .tabset-fade}
+### Age  
+```{r conds_mar_age, message=FALSE, warning=FALSE}
+mar.agecat.med <- svy %>% 
+  filter(deg.marcoh >= 1) %>% 
+  group_by(agecat) %>%
+  summarize(med = survey_median(p.cond, vartype=NULL))
+
+mar.agecat <- svy %>% 
+  filter(deg.marcoh >= 1) %>% 
+  group_by(agecat) %>%
+  summarize(mean = survey_mean(p.cond, vartype="ci")) %>%
+  ggplot(aes(x=agecat, y=mean)) +
+    geom_point() +
+    geom_line() +
+    geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9))+
+  geom_point(data=mar.agecat.med, aes(y=med), color="blue")
+  
+ggplotly(mar.agecat)
+```
+
+
+### Race  
+```{r condomsrace, message=FALSE, warning=FALSE}
+mar.race.med <- svy %>% 
+  filter(deg.marcoh >= 1) %>% 
+  group_by(race) %>%
+  summarize(med = survey_median(p.cond, vartype=NULL))
+
+mar.race <- svy %>% 
+  filter(deg.marcoh >= 1) %>% 
+  group_by(race) %>%
+  summarize(mean = survey_mean(p.cond, vartype="ci")) %>%
+  ggplot(aes(x=race, y=mean)) +
+    geom_point() +
+    geom_errorbar(aes(ymin=mean_low, ymax=mean_upp), width=.2,
+                 position=position_dodge(.9))+
+  geom_point(data=mar.race.med, aes(y=med), color="blue")
+  
+ggplotly(mar.race)
+```

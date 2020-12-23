@@ -230,9 +230,9 @@ ggplotly(raceconc)
 # Age Mixing 
 ## Marriages / Cohabs {.tabset .tabset-pills .tabset-fade}
 ### Diff Age
-```{r age-other, echo=FALSE, fig.align="center", warning=FALSE, message=FALSE}
+```{r age-marcoh, echo=FALSE, fig.align="center", warning=FALSE, message=FALSE}
 agediff <- longsvy %>% 
-  filter(active==1, network1=="other") %>%
+  filter(active==1, network1=="marcoh") %>%
   mutate(sqrtdiff = e.age-age) %>%
   mutate(age=as.factor(e.age), sex=as.factor(e.sex)) %>%
   group_by(e.age, e.sex) %>% 
@@ -248,7 +248,7 @@ agediff %>%
 ### Diff Sqrt Age  
 ```{r sqrtage-other, echo=FALSE, fig.align="center", warning=FALSE, message=FALSE}
 sqrtagediff <- longsvy %>% 
-  filter(active==1, network1=="other") %>%
+  filter(active==1, network1=="marcoh") %>%
   mutate(sqrtdiff = sqrt(e.age)-sqrt(age)) %>%
   mutate(age=as.factor(e.age), sex=as.factor(e.sex)) %>%
   group_by(e.age, e.sex) %>% 
@@ -261,7 +261,7 @@ sqrtagediff %>%
   geom_hline(yintercept = 0)
 
 sexmean <- longsvy %>% 
-  filter(active==1, network1=="other") %>%
+  filter(active==1, network1=="marcoh") %>%
   mutate(sqrtdiff = sqrt(e.age)-sqrt(age)) %>%
   mutate(age=as.factor(e.age), sex=as.factor(e.sex)) %>%
   group_by(e.sex) %>% 
@@ -322,6 +322,20 @@ sqrtagediff %>%
   geom_point() +
   facet_wrap(~e.sex) + 
   geom_hline(yintercept = 0)
+
+sexmean <- longsvy %>% 
+  filter(active==1, network1=="other") %>%
+  mutate(sqrtdiff = sqrt(e.age)-sqrt(age)) %>%
+  mutate(age=as.factor(e.age), sex=as.factor(e.sex)) %>%
+  group_by(e.sex) %>% 
+  summarize(n=survey_mean(sqrtdiff)) 
+
+sexmean %>%
+  kable() %>%
+  kable_styling()
+
+shift <- mean(abs(sexmean$n))
+shift
 ```
 
 ### Diff Cube Root Age

@@ -1,0 +1,63 @@
+---
+title: "Target Duration Estimates"
+author: "Emily Pollock"
+date: "12/23/2020"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, message=F, warning=F}
+#library(ergm.ego)
+library(here)
+library(flexsurv)
+library(srvyr)
+library(kableExtra)
+#source("~/Documents/Dissertation/R/Duration/Functions/finalEgodataPrep.R") # generates the egodata objects
+dat <- readRDS("~/nsfg_data_cleaning/Objects/altersegos_survdat.rds")
+# convert duration from months to weeks
+dat <- dat %>%
+  mutate(edge_age_week = edge_age_month/12*52,
+        t_o_week = t_o/12*52,
+        t_c_week = t_c/12*52,
+        network3 = ifelse(reltype %in% "Cur/Fmr Cohab", "cohab", 
+                          ifelse(reltype %in% "Cur/Fmr Spouse", "mar", 
+                                 ifelse(reltype %in% "Other", "casual", NA))))
+svy <- as_survey_design(dat, ids = ego, weights = weight)
+```
+
+comparing mean and median relationship duration (w/o censoring corrections) to fitted exponential model expectation adj for censoring  
+both estimates use survey weights  
+
+```{r ests, message=F, warning=F}
+#marriages
+mean_mar <- svy %>% filter(network3=="mar") %>% summarize(mean=survey_mean(edge_age_week))
+
+mar_model <- flexsurvreg(Surv(t_o_week, t_c_week, censored) ~ 1, 
+                       data = dat[dat$network3=="mar",], dist = "exp", weights = weight)
+
+mar_model_mean <- 1/exp(coef(mar_model)[1])
+
+#cohabs
+mean_cohab <- svy %>% filter(network3=="cohab") %>% summarize(mean=survey_mean(edge_age_week))
+
+cohab_model <- flexsurvreg(Surv(t_o_week, t_c_week, censored) ~ 1, 
+                       data = dat[dat$network3=="cohab",], dist = "exp", weights = weight)
+
+cohab_model_mean <- 1/exp(coef(cohab_model)[1])
+
+#casual
+mean_casual <- svy %>% filter(network3=="casual") %>% summarize(mean=survey_mean(edge_age_week))
+
+casual_model <- flexsurvreg(Surv(t_o_week, t_c_week, censored) ~ 1, 
+                       data = dat[dat$network3=="casual",], dist = "exp", weights = weight)
+
+casual_model_mean <- 1/exp(coef(casual_model)[1])
+
+results <- round(data.frame(cbind(rbind(mean_mar[1], mean_cohab[1], mean_casual[1]), rbind(mar_model_mean, cohab_model_mean, casual_model_mean))))
+row.names(results) <- c("Marriage", "Cohab", "Casual")
+colnames(results) <- c("Mean", "Exp Model Mean")
+
+kable(results, caption="Comparison of Mean Durations, Weeks") %>%
+  kable_styling(full_width=F)
+```

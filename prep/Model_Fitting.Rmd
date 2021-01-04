@@ -95,6 +95,10 @@ egodat_cohab$egos <- egos
 egodat_other$egos <- egos
 egodat_once$egos <- egos
 
+egodat_cohab$egoWt <- egodat_marriage$egoWt
+egodat_other$egoWt <- egodat_marriage$egoWt
+egodat_once$egoWt <- egodat_marriage$egoWt
+
 
 # grab binary deg dist for plots below, x2 for scaline to 20000 nodes
 m <- with(egodat_marriage$egos[egodat_marriage$egos$male==1,], table(age, deg.mar))
@@ -119,6 +123,8 @@ fo <- fo[,2]*(ppopsize/ssize)
 ## Ergm.Ego Estimation & Setup
 
 ```{r, eval=F}
+dat$shift.mar
+
 fit.marriage <- ergm.ego(egodat_marriage ~ edges + 
                          nodecov(~ageF) + 
                          nodecov(~ageF^2) +
@@ -128,7 +134,7 @@ fit.marriage <- ergm.ego(egodat_marriage ~ edges +
                          nodecov(~ageM^2) +
                          nodecov(~ageM<30) + 
                          nodecov(~ageM>30) + 
-                         absdiff(~sqrtage + dat$shift.mar*(male==0)) + 
+                         absdiff(~sqrtage + 0.1390122*(male==0)) + 
                          nodefactor("deg.other.binary") +
                          offset(nodematch("male", diff = FALSE)) +
                          offset(nodefactor("olderpartnerM")) +
@@ -249,6 +255,8 @@ mean(sqrtages$diff)
 ## Ergm.Ego Estimation & Setup
 
 ```{r, eval=F}
+dat$shift.cohab
+
 x <- control.ergm.ego(ppopsize = 1, ppop.wt = "sample",
                       ergm.control = control.ergm(MCMLE.maxit = 200,
                                                   MCMC.interval = MCMCinterval,
@@ -263,7 +271,7 @@ fit.cohab <- ergm.ego(egodat_cohab ~ edges +
                          nodecov(~ageM^2) +
                          nodefactor(~ageF, levels=5:9) + 
                          nodefactor(~ageM, levels=7:10) + 
-                         absdiff(~sqrtage + dat$shift.cohab*(male==0)) + 
+                         absdiff(~sqrtage + 0.1794225*(male==0)) + 
                          nodefactor("deg.other.binary") +
                          offset(nodematch("male", diff = FALSE)) +
                          offset(nodefactor("olderpartnerC")) +
@@ -373,6 +381,8 @@ mean(sqrtages$diff)
 
 ## Fit
 ```{r, eval=F } 
+dat$shift.other
+
 fit.other <- ergm.ego(egodat_other ~ edges + 
                          nodecov(~ageF) + 
                          nodecov(~ageF<19) + 
@@ -380,7 +390,7 @@ fit.other <- ergm.ego(egodat_other ~ edges +
                          nodecov(~ageM<19) + 
                          nodecov(~ageM) + 
                          nodecov(~ageM^2) +
-                        absdiff(~sqrtage + dat$shift.other*(male==0)) + 
+                        absdiff(~sqrtage + 0.14505*(male==0)) + 
                         nodefactor("deg.mar") +
                         nodefactor("deg.cohab") +
                         concurrent(by=~male) +

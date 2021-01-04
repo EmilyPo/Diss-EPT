@@ -490,6 +490,6 @@ mean(sqrtages$diff)
 ```
 
 ```{r fullnetest }
-#netests <- list(marcoh.netest, other.netest)
-#saveRDS(netests, here("Setup", "FinalNetworks", "objects", "full", "nodefactor", "netests_nodefactor.rds"))
+netests <- list(marriage.netest, cohab.netest, other.netest)
+saveRDS(netests, here("fits", "netests.rds"))
 ```

@@ -116,6 +116,12 @@ mo <- mo[,2]*(ppopsize/ssize)
 fo <- with(egodat_other$egos[egodat_other$egos$male==0,], table(age, deg.other))
 fo <- fo[,2]*(ppopsize/ssize)
 
+saveRDS(list(egodat_marriage, egodat_cohab, egodat_other, egodat_once), here("fits", "egodata.rds"))
+x <- readRDS(here("fits", "egodata.rds"))
+egodat_marriage <- x[[1]]
+egodat_cohab <- x[[2]]
+egodat_other <- x[[3]]
+egodat_once <- x[[4]]
 ```
 
 # Marriage Network {.tabset .tabset-pills .tabset-fade}
@@ -138,9 +144,9 @@ fit.marriage <- ergm.ego(egodat_marriage ~ edges +
                          nodefactor("deg.other.binary") +
                          offset(nodematch("male", diff = FALSE)) +
                          offset(nodefactor("olderpartnerM")) +
-                         #offset(nodefactor("debuted", levels=1)) + 
+                         offset(nodefactor("deg.cohab")) +
                          offset("concurrent"), 
-                         offset.coef = c(-Inf, -Inf, -Inf), #offset.coef = c(-Inf, -Inf, -Inf, -Inf),
+                         offset.coef = c(-Inf, -Inf, -Inf, -Inf), 
                          control = 
                          control.ergm.ego(ppop.wt = "sample", ppopsize = ppopsize, 
                                           ergm.control = 
@@ -150,6 +156,7 @@ fit.marriage <- ergm.ego(egodat_marriage ~ edges +
                                                          parallel = np,
                                                          parallel.type = ptype)))
 
+#offset(nodefactor("debuted", levels=1)) + 
 #nodefactor(~ageF, levels=5:9) + 
 #nodefactor(~ageM, levels=7:10) + 
 
@@ -203,7 +210,7 @@ saveRDS(dynamic.marriage, here("fits", "dynamic.m.rds"))
 
 ```{r}
 dynamic.marriage <- readRDS(here("fits", "dynamic.m.rds"))
-plot(dynamic.marriage)
+dynamic.marriage
 plot(dynamic.marriage)
 plot(dynamic.marriage, type = "duration")
 plot(dynamic.marriage, type = "dissolution")
@@ -265,20 +272,24 @@ x <- control.ergm.ego(ppopsize = 1, ppop.wt = "sample",
 x$ppopsize <- mpop
 
 fit.cohab <- ergm.ego(egodat_cohab ~ edges + 
-                         nodecov(~ageF) + 
-                         nodecov(~ageF^2) +
+                         nodefactor(~ageF, levels=4:10) + 
+                         nodefactor(~ageM, levels=5:10) + 
+                         nodecov(~ageF) +
+                         nodecov(~ageF>=27) +
                          nodecov(~ageM) + 
-                         nodecov(~ageM^2) +
-                         nodefactor(~ageF, levels=5:9) + 
-                         nodefactor(~ageM, levels=7:10) + 
+                         nodecov(~ageM>=27) + 
                          absdiff(~sqrtage + 0.1794225*(male==0)) + 
                          nodefactor("deg.other.binary") +
                          offset(nodematch("male", diff = FALSE)) +
                          offset(nodefactor("olderpartnerC")) +
-                         #offset(nodefactor("debuted", levels=1)) + 
-                         offset("concurrent"), 
-                         offset.coef = c(-Inf, -Inf, -Inf), #offset.coef = c(-Inf, -Inf, -Inf, -Inf),
+                         offset(nodefactor("deg.mar")) +
+                         offset("concurrent") +
+                         offset(nodefactor(~ageF%in%15:16)) +
+                         offset(nodefactor(~ageM%in%15:17)),
+                         offset.coef = c(-Inf, -Inf, -Inf, -Inf,-Inf, -Inf),
                          control = x)
+
+#offset(nodefactor("debuted", levels=1)) + 
 
 saveRDS(fit.cohab, here("fits", "fit.cohab.rds"))
 ```
@@ -386,13 +397,17 @@ dat$shift.other
 fit.other <- ergm.ego(egodat_other ~ edges + 
                          nodecov(~ageF) + 
                          nodecov(~ageF<19) + 
+                         nodecov(~ageF>19) + 
                          nodecov(~ageF^2) +
                          nodecov(~ageM<19) + 
+                         nodecov(~ageM>19) + 
                          nodecov(~ageM) + 
                          nodecov(~ageM^2) +
                         absdiff(~sqrtage + 0.14505*(male==0)) + 
                         nodefactor("deg.mar") +
                         nodefactor("deg.cohab") +
+                        nodefactor(~ageF %in% 17) +
+                        nodefactor(~ageM %in% 17) + 
                         concurrent(by=~male) +
                         offset(nodematch("male", diff = FALSE)) +
                         offset(nodefactor("olderpartnerO")),

@@ -284,9 +284,9 @@ fit.cohab <- ergm.ego(egodat_cohab ~ edges +
                          offset(nodefactor("olderpartnerC")) +
                          offset(nodefactor("deg.mar")) +
                          offset("concurrent") +
-                         offset(nodefactor(~ageF%in%15:16)) +
-                         offset(nodefactor(~ageM%in%15:17)),
-                         offset.coef = c(-Inf, -Inf, -Inf, -Inf,-Inf, -Inf),
+                         offset(nodefactor(~ageF, levels=2:3)) +
+                         offset(nodefactor(~ageM, levels=2:4)),
+                         offset.coef = c(rep(-Inf, 9)),
                          control = x)
 
 #offset(nodefactor("debuted", levels=1)) + 

@@ -1,0 +1,87 @@
+---
+title: "Duration Targets"
+author: "Emily Pollock"
+date: "1/21/2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, message=F, warning=F}
+#library(ergm.ego)
+library(here)
+library(flexsurv)
+library(srvyr)
+library(kableExtra)
+
+# objects
+dat <- readRDS("~/nsfg_data_cleaning/Objects/altersegos_survdat.rds")
+# convert duration from months to weeks
+dat <- dat %>%
+  mutate(edge_age_week = edge_age_month/12*52,
+        t_o_week = t_o/12*52,
+        t_c_week = t_c/12*52)
+svy <- as_survey_design(dat, ids = ego, weights = weight)
+```
+
+## Duration Targets
+comparing mean and median relationship duration (w/o censoring corrections) to fitted exponential model expectation adj for censoring  
+both estimates use survey weights  
+
+```{r ests, message=F, warning=F}
+#marcoh
+mean_marcoh <- svy %>% filter(network1=="marcoh") %>% summarize(mean=survey_mean(edge_age_week))
+
+marcoh_model <- flexsurvreg(Surv(t_o_week, t_c_week, censored) ~ 1, 
+                       data = dat[dat$network1=="marcoh",], dist = "exp", weights = weight)
+
+marcoh_model_mean <- 1/exp(coef(marcoh_model)[1])
+
+#casual
+mean_casual <- svy %>% filter(network1=="other") %>% summarize(mean=survey_mean(edge_age_week))
+
+casual_model <- flexsurvreg(Surv(t_o_week, t_c_week, censored) ~ 1, 
+                       data = dat[dat$network1=="other",], dist = "exp", weights = weight)
+
+casual_model_mean <- 1/exp(coef(casual_model)[1])
+
+results <- round(data.frame(cbind(rbind(mean_marcoh[1], mean_casual[1]), 
+                                  rbind(marcoh_model_mean, casual_model_mean))))
+row.names(results) <- c("Marriage/Cohab", "Casual")
+colnames(results) <- c("Mean", "Exp Model Mean")
+
+kable(results, caption="Comparison of Mean Durations, Weeks") %>%
+  kable_styling(full_width=F)
+```
+
+
+## Age shift targets 
+```{r ageshift}
+sexmean <- svy %>% 
+  filter(active==1, network1=="marcoh") %>%
+  mutate(sqrtdiff = sqrt(e.age)-sqrt(age)) %>%
+  mutate(age=as.factor(e.age), sex=as.factor(e.sex)) %>%
+  group_by(e.sex) %>% 
+  summarize(n=survey_mean(sqrtdiff)) 
+
+sexmean %>%
+  kable(caption="mean sqrt age diff, marcohs") %>%
+  kable_styling()
+
+shift <- mean(abs(sexmean$n))
+shift
+
+sexmean <- svy %>% 
+  filter(active==1, network1=="other") %>%
+  mutate(sqrtdiff = sqrt(e.age)-sqrt(age)) %>%
+  mutate(age=as.factor(e.age), sex=as.factor(e.sex)) %>%
+  group_by(e.sex) %>% 
+  summarize(n=survey_mean(sqrtdiff)) 
+
+sexmean %>%
+  kable(caption="mean sqrt age diff, casual") %>%
+  kable_styling()
+
+shift <- mean(abs(sexmean$n))
+shift
+```

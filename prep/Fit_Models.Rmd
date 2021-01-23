@@ -1,0 +1,398 @@
+---
+title: "EPT Network Fits"
+author: "Emily Pollock"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+library(ergm.ego)
+library(EpiModel)
+library(parallel)
+library(egonet)
+library(here)
+source("~/Documents/Dissertation/R/Duration/Functions/finalEgodataPrep.R") # generates the egodata objects
+source("~/Documents/Dissertation/R/EPT/prep/setup_params2.R") # object with params of interest 
+rm(egodat_cohab)
+rm(egodat_marriage)
+```
+
+# Session Info
+```{r}
+sessioninfo::package_info()
+```
+
+# General Controls  
+
+__but then will also need to use CKs correction in-simiulation find undelrying relationship length in presense of mortality__  
+```{r}
+np <- detectCores()
+# Set parallel.type
+if (np==0) ptype=NULL else ptype='PSOCK'
+
+dat <- setup_params()
+ppopsize <- dat$ppopsize
+MCMCinterval <- dat$mcmcInterval
+MCMCburnin <- dat$mcmcBurnin
+
+time.step <- dat$time.step
+age.width <- dat$age.width
+dissolution <- dat$dissolution
+#mRate <- dat$mRate
+
+duration.marcoh <- dat$duration.marcoh
+duration.other <- dat$duration.other
+
+DissolutionMarcoh <- dissolution_coefs(dissolution=dissolution, 
+                                       duration=duration.marcoh)
+
+DissolutionOther <- dissolution_coefs(dissolution=dissolution, 
+                                      duration=duration.other)
+
+DissolutionOnce <- dissolution_coefs(dissolution=dissolution, 
+                                      duration=1)
+```
+
+# Some Adjustments  
+* make age/sex attribute (i.e. 15F, 23M)  
+* sample down to 10,000  
+
+```{r}
+ssize <- 10000
+# sample down to 10,000
+egodat_marcoh <- sample(egodat_marcoh, ssize)
+
+# pull sampled egos, attribute updates, and update other alter lists (for consistent nodeset)
+egos <- egodat_marcoh$egos
+
+egodat_other$alters <- egodat_other$alters[egodat_other$alters$ego %in% egos$ego,]
+egodat_once$alters <- egodat_once$alters[egodat_once$alters$ego %in% egos$ego,]
+
+egos$ageF <- ifelse(egos$male==0, egos$age, 0)
+egos$ageM <- ifelse(egos$male==1, egos$age, 0)
+
+egodat_marcoh$alters$ageF <- ifelse(egodat_marcoh$alters$male==0, egodat_marcoh$alters$age, 0)
+egodat_marcoh$alters$ageM <- ifelse(egodat_marcoh$alters$male==1, egodat_marcoh$alters$age, 0)
+
+egodat_other$alters$ageF <- ifelse(egodat_other$alters$male==0, egodat_other$alters$age, 0)
+egodat_other$alters$ageM <- ifelse(egodat_other$alters$male==1, egodat_other$alters$age, 0)
+
+egodat_once$alters$ageF <- ifelse(egodat_once$alters$male==0, egodat_once$alters$age, 0)
+egodat_once$alters$ageM <- ifelse(egodat_once$alters$male==1, egodat_once$alters$age, 0)
+
+egodat_marcoh$egos <- egos
+egodat_other$egos <- egos
+egodat_once$egos <- egos
+
+egodat_other$egoWt <- egodat_marcoh$egoWt
+egodat_once$egoWt <- egodat_marcoh$egoWt
+
+
+# grab binary deg dist for plots below, x2 for scaline to 20000 nodes
+m <- with(egodat_marcoh$egos[egodat_marcoh$egos$male==1,], table(age, deg.marcoh))
+m <- m[,2]*(ppopsize/ssize)
+f <- with(egodat_marcoh$egos[egodat_marcoh$egos$male==0,], table(age, deg.marcoh))
+f <- f[,2]*(ppopsize/ssize)
+
+mo <- with(egodat_other$egos[egodat_other$egos$male==1,], table(age, deg.other))
+mo <- mo[,2]*(ppopsize/ssize)
+fo <- with(egodat_other$egos[egodat_other$egos$male==0,], table(age, deg.other))
+fo <- fo[,2]*(ppopsize/ssize)
+
+saveRDS(list(egodat_marcoh, egodat_other, egodat_once), here("fits", "egodata.rds"))
+x <- readRDS(here("fits", "egodata.rds"))
+egodat_marcoh <- x[[1]]
+egodat_other <- x[[2]]
+egodat_once <- x[[3]]
+```
+
+# Marriage/Cohab Network {.tabset .tabset-pills .tabset-fade}
+
+## Ergm.Ego Estimation & Setup
+
+```{r, eval=F}
+dat$shift.marcoh
+
+fit.marcoh <- ergm.ego(egodat_marcoh ~ edges + 
+                         nodecov(~ageF) + 
+                         nodecov(~ageF^2) +
+                         nodecov(~ageM) + 
+                         nodecov(~ageM^2) +
+                         nodefactor(~age<30) + 
+                         nodefactor(~age>30) + 
+                         absdiff(~sqrtage + 0.1511228*(male==0)) + 
+                         nodefactor("deg.other.binary") +
+                         offset(nodematch("male", diff = FALSE)) +
+                         offset(nodefactor("olderpartnerMC")) +
+                         offset("concurrent"), 
+                         offset.coef = c(-Inf, -Inf, -Inf), 
+                         control = control.ergm.ego(ppop.wt = "sample", ppopsize = ppopsize, 
+                                          ergm.control = 
+                                            control.ergm(MCMLE.maxit = 100,
+                                                         MCMC.interval = MCMCinterval, 
+                                                         MCMC.burnin = MCMCburnin,
+                                                         parallel = np,
+                                                         parallel.type = ptype)))
+
+
+saveRDS(fit.marcoh, here("fits", "fit.marcoh.rds"))
+```
+
+```{r}
+fit.marcoh <- readRDS(here("fits", "fit.marcoh.rds"))
+mpop <- environment(fit.marcoh$ergm.formula)$popnw
+marcoh.netest <- ego.netest(fit.marcoh, DissolutionMarcoh)
+summary(fit.marcoh)
+```
+
+## MCMC Diagnostics / GOF
+```{r, warning=F, message=F, comment = F, results='hide', fig.keep='all'}
+mcmc.diagnostics(fit.marcoh)
+```
+
+```{r, eval=F}
+gof <- gof(fit.marcoh, GOF = "model")
+saveRDS(gof, here("fits", "gof.m.rds"))
+```
+
+```{r}
+gof <- readRDS(here("fits", "gof.m.rds"))
+plot(gof)
+```
+
+## Static Diagnostics 
+
+```{r, eval=F}
+static.mar <- netdx(marcoh.netest, nsims = 500, dynamic = FALSE)
+saveRDS(static.mar, here("fits", "static.m.rds"))
+```
+
+```{r}
+static.mar <- readRDS(here("fits", "static.m.rds"))
+static.mar
+plot(static.mar)
+```
+
+## Dynamic Diagnostics 
+```{r, eval=F}
+dynamic.mar <- netdx(marcoh.netest, nsims = 5, nsteps = 1000, ncores = np, 
+                       set.control.ergm = control.simulate.ergm(MCMC.burnin=1e5, 
+                                                                MCMC.interval=1e5),
+                       set.control.stergm = control.simulate.network(MCMC.burnin.min=1e5,
+                                                                     MCMC.burnin.max=1e5))
+saveRDS(dynamic.mar, here("fits", "dynamic.m.rds"))
+```
+
+```{r}
+dynamic.marriage <- readRDS(here("fits", "dynamic.m.rds"))
+dynamic.marriage
+plot(dynamic.marriage)
+plot(dynamic.marriage, type = "duration")
+plot(dynamic.marriage, type = "dissolution")
+```
+
+
+## Checking Mean Deg Dist by Age/Sex and Age/Sex Mixing are close to data 
+```{r diag-diagnostic-mar}
+n <- dynamic.marriage$nw
+
+plot(summary(n ~ nodefactor(~ageM)), type="l", main="Males")
+lines(m, pch=19, col="blue")
+legend("topright", legend = c("Empirical", "Model"), col=c("blue", "black"), lwd=1)
+
+plot(summary(n ~ nodefactor(~ageF)), type="l", main="Females")
+lines(f, col="blue")
+legend("topright", legend = c("Empirical", "Model"), col=c("blue", "black"), lwd=1)
+
+# age/sex mixing
+aF <- n %v% "ageF"
+aM <- n %v% "ageM" 
+
+el <- as.edgelist(n)
+fem1 <- aF[el[,1]]
+fem2 <- aF[el[,2]]
+male1 <- aM[el[,1]]
+male2 <- aM[el[,2]]
+
+allFs <- NULL
+allMs <- NULL 
+
+for (i in 1:length(fem1)){
+  if (fem1[i] != 0) {allFs[i] <- fem1[i]} 
+  else {allFs[i] <- fem2[i]}
+  
+  if (male1[i] != 0) {allMs[i] <- male1[i]} 
+  else {allMs[i] <- male2[i]}
+  }
+
+agesel <- as.data.frame(cbind(allFs, allMs))
+sqrtages <- sqrt(agesel)
+sqrtages$diff <- sqrtages[,1] - sqrtages[,2]
+mean(sqrtages$diff)
+```
+
+# Other Network {.tabset .tabset-pills .tabset-fade}
+
+## Fit
+```{r, eval=F } 
+dat$shift.other
+
+x <- control.ergm.ego(ppopsize = 1, ppop.wt = "sample",
+                      ergm.control = control.ergm(MCMLE.maxit = 200,
+                                                  MCMC.interval = MCMCinterval,
+                                                  MCMC.burnin = MCMCburnin))
+
+x$ppopsize <- mpop
+
+fit.other <- ergm.ego(egodat_other ~ edges + 
+                        nodecov(~ageF) + 
+                        nodecov(~ageF^2) +
+                        nodecov(~ageM) + 
+                        nodecov(~ageM^2) +
+                        absdiff(~sqrtage + 0.14505*(male==0)) + 
+                        nodefactor("deg.marcoh") +
+                        nodefactor(~ageM, levels=2:10) +
+                        nodefactor(~ageF, levels=2:10) + 
+                        concurrent(by=~male) +
+                        offset(nodematch("male", diff = FALSE)) +
+                        offset(nodefactor("olderpartnerO")),
+                        offset.coef = c(-Inf, -Inf), 
+                        control = x)
+
+#offset(nodefactor("debuted", levels=1)),
+#offset.coef = c(-Inf, -Inf),
+
+saveRDS(fit.other, here("fits", "fit.other.rds"))
+```
+
+
+```{r}
+fit.other <- readRDS(here("fits", "fit.other.rds"))
+other.netest <- ego.netest(fit.other, DissolutionOther)
+summary(fit.other)
+```
+
+## MCMC Diagnostics / GOF
+```{r, warning=F, message=F, comment = F, results='hide', fig.keep='all'}
+mcmc.diagnostics(fit.other)
+```
+
+```{r, eval=F}
+gof.o <- gof(fit.other, GOF = "model")
+saveRDS(gof.o, here("fits", "gof.o.rds"))
+```
+
+```{r}
+gof.o <- readRDS(here("fits", "gof.o.rds"))
+plot(gof.o)
+```
+
+## Static Diagnostic 
+```{r }
+static.other <- netdx(other.netest, nsims = 500, dynamic = FALSE)
+saveRDS(static.other, here("fits", "static.other.rds"))
+```
+
+```{r, eval=F}
+static.other <- readRDS(here("fits", "static.other.rds"))
+static.other
+plot(static.other)
+```
+
+## Dynamic Diagnostic
+
+```{r, eval=F}
+dynamic.other <- netdx(other.netest, nsims = 5, nsteps = 1000, ncores = np,
+                       set.control.ergm = control.simulate.ergm(MCMC.burnin=1e5, 
+                                                                MCMC.interval=1e5),
+                       set.control.stergm = control.simulate.network(MCMC.burnin.min=1e5,
+                                                                     MCMC.burnin.max=1e5))
+saveRDS(dynamic.other, here("fits", "dynamic.other.rds"))
+```
+
+```{r}
+dynamic.other <- readRDS(here("fits", "dynamic.other.rds"))
+dynamic.other
+plot(dynamic.other)
+plot(dynamic.other, type = "duration")
+plot(dynamic.other, type = "dissolution")
+```
+
+## Checking Mean Deg Dist by Age/Sex and Age/Sex Mixing are close to data  
+```{r diag-diagnostic, out.width="70%"}
+n <- dynamic.other$nw
+#n <- fit.other$newnetwork
+
+# mean deg dist 
+plot(summary(n ~ nodefactor(~ageM)), type="l", main="Males")
+lines(mo, pch=19, col="blue")
+legend("topright", legend = c("Empirical", "Model"), col=c("blue", "black"), lwd=1)
+
+plot(summary(n ~ nodefactor(~ageF)), type="l", main="Females")
+lines(fo, col="blue")
+legend("topright", legend = c("Empirical", "Model"), col=c("blue", "black"), lwd=1)
+
+# age/sex mixing
+aF <- n %v% "ageF"
+aM <- n %v% "ageM" 
+
+el <- as.edgelist(n)
+fem1 <- aF[el[,1]]
+fem2 <- aF[el[,2]]
+male1 <- aM[el[,1]]
+male2 <- aM[el[,2]]
+
+allFs <- NULL
+allMs <- NULL 
+
+for (i in 1:length(fem1)){
+  if (fem1[i] != 0) {allFs[i] <- fem1[i]} 
+  else {allFs[i] <- fem2[i]}
+  
+  if (male1[i] != 0) {allMs[i] <- male1[i]} 
+  else {allMs[i] <- male2[i]}
+  }
+
+agesel <- as.data.frame(cbind(allFs, allMs))
+sqrtages <- sqrt(agesel)
+sqrtages$diff <- sqrtages[,1] - sqrtages[,2]
+mean(sqrtages$diff)
+```
+
+# One-Time Network {.tabset .tabset-pills .tabset-fade}
+
+## Fit
+```{r, eval=F } 
+breaks <- c(15, 20, 25, 30, 35, 40, 45)
+egodat_once$alters$agecat <- cut(egodat_once$alters$age, breaks, labels=F, right=F)
+
+fit.once <- ergm.ego(egodat_once ~ edges + 
+                        nodefactor(~agecat) +
+                        absdiff(~sqrtage) + 
+                        nodefactor("deg.marcoh") +
+                        nodefactor("deg.other.binary") +
+                        offset(nodematch("male", diff = FALSE)),
+                        offset.coef = c(-Inf), 
+                        control = x)
+
+saveRDS(fit.once, here("fits", "fit.once.rds"))
+```
+
+# adjust edges for time-step rate not yearly count!
+```{r}
+fit.once <- readRDS(here("fits", "fit.once.rds"))
+once.netest <- ego.netest(fit.once, DissolutionOnce, 
+                          obs.adjust = TRUE, obs.offset = 52)
+summary(fit.once)
+```
+
+```{r fullnetest }
+netests <- list(marcoh.netest, other.netest, once.netest)
+saveRDS(netests, here("fits", "netests.rds"))
+```

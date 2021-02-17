@@ -1,0 +1,67 @@
+---
+title: "Pre&Post Demography Corrections"
+author: "Emily Pollock"
+date: "1/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(srvyr)
+library(ggplot2)
+library(EpiModel)
+sim <- readRDS(here("calibration", "og_sim.rds"))
+sim2 <- readRDS(here("calibration", "calibration_sim_inprogress.rds"))
+source(here("functions", "ddaf_functions.R"))
+```
+# Pre demography adjs
+## Some Summaries
+```{r plots, out.width="70%"}
+plot(sim, y=c("meanDegMar", "meanDegCohab"), legend=T)
+plot(sim, y=c("meanDegOther"), legend=T)
+plot(sim, y=c("num.feml", "num.male"), legend=T)
+```
+
+## Marriage
+```{r marriage, out.width="70%"}
+m <- get_dist(sim,1)
+m[[1]];m[[2]]
+```    
+
+## Cohab
+```{r cohab, out.width="70%"}
+c <- get_dist(sim,2)
+c[[1]];c[[2]]
+```    
+
+## Casual
+```{r casual, out.width="70%"}
+o <- get_dist(sim,3)
+o[[1]];o[[2]]
+```    
+# Post demography adjs
+## Some Summaries
+```{r plot2s, out.width="70%"}
+plot(sim2, y=c("meanDegMar", "meanDegCohab"), legend=T)
+plot(sim2, y=c("meanDegOther"), legend=T)
+plot(sim2, y=c("num.feml", "num.male"), legend=T)
+```
+
+## Marriage
+```{r marriage2, out.width="70%"}
+m <- get_dist(sim2,1)
+m[[1]];m[[2]]
+```    
+
+## Cohab
+```{r cohab2, out.width="70%"}
+c <- get_dist(sim2,2)
+c[[1]];c[[2]]
+```    
+
+## Casual
+```{r casual2, out.width="70%"}
+o <- get_dist(sim2,3)
+o[[1]];o[[2]]
+```    

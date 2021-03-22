@@ -1,0 +1,210 @@
+---
+title: "Testing Parameters"
+author: "Emily Pollock"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        code_folding: hide
+---
+
+```{r setup, message=F, warning=F}
+#library(ergm.ego)
+library(here)
+library(flexsurv)
+library(srvyr)
+library(kableExtra)
+library(tidyverse)
+library(survey)
+
+# objects
+dat <- readRDS("~/nsfg_data_cleaning/Objects/egos.rds")
+svy <- as_survey_design(dat, ids = ego, weights = weight)
+```
+
+# Chlamydia Test in last year {.tabset}
+(conditional on being a female who has had a sex parter in last year)
+
+## Age Category
+```{r agecat}
+prop_women_tested_agecat <- svy %>% 
+                      filter(sex == "F", CHLAMTST <9, partsyr3 > 0) %>% 
+                      mutate(CHLAMTST = as.factor(CHLAMTST)) %>% 
+                      group_by(agecat, CHLAMTST) %>% 
+                      survey_tally() %>% 
+                      mutate(prop=n/sum(n)) %>%
+                      filter(CHLAMTST==1)
+
+mean2 <- mean(prop_women_tested_agecat$prop)
+
+prop_women_tested_agecat %>% ggplot() +
+  geom_point(aes(x=agecat, y=prop)) 
+```
+
+## Int. Year
+```{r intyr}
+prop_women_tested_year <- svy %>% 
+                      filter(sex == "F", CHLAMTST <9, partsyr3 >0) %>% 
+                      mutate(CHLAMTST = as.factor(CHLAMTST), 
+                             intyr = as.factor(intyr)) %>%
+                      group_by(intyr, CHLAMTST) %>% 
+                      survey_tally() %>% 
+                      mutate(prop=n/sum(n)) %>%
+                      filter(CHLAMTST %in% 1)
+
+mean <- mean(prop_women_tested_year$prop)
+
+prop_women_tested_year %>% ggplot() +
+  geom_point(aes(x=intyr, y=prop)) + 
+  geom_smooth(aes(x=intyr, y=prop))
+```
+
+## Point Estimates - AgeCat 
+```{r chlam}
+tab <- prop_women_tested_agecat[,c(1,5)]
+tab$prop <- round(tab$prop, 3)
+
+kable(tab, caption="Proportion of Sexually Active Women who Tested in Last Year") %>%
+  kable_styling()
+```
+
+# Sex Acts per Time Step
+
+because "sex4wk" is an aggregate variable, not a dyad-specific variable, we may overestimate 
+
+solution - modify sex4wk by # active partners? so 20 acts / month for monogamous , but 10 acts/month if they had 2 partners? is that even a reasonable assumption? That's what we do here per chat w/ SMG 3/18/21
+
+```{r prep-data, echo=F}
+# objects
+dyad <- readRDS("~/nsfg_data_cleaning/Objects/altersegos_survdat.rds")
+# convert duration from months to weeks
+dyad <- dyad %>% 
+  filter(active==1) %>%
+  mutate(edge_age_week = edge_age_month/12*52,
+        t_o_week = t_o/12*52,
+        t_c_week = t_c/12*52)
+
+# add sex4wk and cond4wk based on ego report
+egos <- dyad$ego
+sex <- dat$sex4wk[egos]
+cond <- dat$cond4wk[egos]
+
+dyad$sex4wk <- sex
+dyad$cond4wk <- cond 
+
+data <- dyad %>%
+  filter(sex4wk<900 & cond4wk <900) %>%
+  mutate(comb.age = age + e.age) %>%
+  mutate(ptype=ifelse(network1 %in% "marcoh", 1, 2)) %>%
+  mutate(duration=edge_age_week)
+
+# don't need to use svyglm - SE will be different, but predictions the same (and glm is base R so easier to use in simulations)
+#svydyad <- as_survey_design(dyad, ids = ego, weights = weight)
+#actsMonth <- svyglm(sex4wk  ~comb.age + network1 + edge_age_week, family = "poisson", design=svydyad) 
+#predict1 <- predict(actsMonth, svydyad)
+
+actives3ego <- egos[table(egos)==3]
+actives2ego <- egos[table(egos)==2]
+
+data2 <- data
+data2$sex4wk[data$ego %in% actives3ego] <- round(data2$sex4wk[data$ego %in% actives3ego]/3)
+data2$sex4wk[data$ego %in% actives2ego] <- round(data2$sex4wk[data$ego %in% actives2ego]/2)
+
+# do this for condom use too 
+data2$cond4wk[data$ego %in% actives3ego] <- round(data2$cond4wk[data$ego %in% actives3ego]/3)
+data2$cond4wk[data$ego %in% actives2ego] <- round(data2$cond4wk[data$ego %in% actives2ego]/2)
+
+data2$nocond <- data2$sex4wk-data2$cond4wk 
+data2 <- data2 %>% filter(nocond>=0) 
+
+svydat <- as_survey_design(data2, id=ego, weights=weight) 
+```
+
+## Univariate {.tabset}
+### Combined Age 
+```{r acts.age}
+acts.age <- svyglm(sex4wk ~ comb.age, family = "poisson", design=svydat) 
+summary(acts.age)
+```
+
+### Partnership Type
+```{r acts.ptype}
+acts.ptype <- svyglm(sex4wk ~ ptype, family = "poisson", design=svydat) 
+summary(acts.ptype)
+```
+
+### Current Relationship Duration
+```{r acts.dur}
+acts.dur <- svyglm(sex4wk ~ duration, family = "poisson", design=svydat) 
+summary(acts.dur)
+```
+
+## Multivariate 
+```{r acts.full, echo=F}
+acts.full <- svyglm(sex4wk ~ comb.age + ptype + duration, family = "poisson", design=svydat) 
+summary(acts.full)
+```
+
+## Output for Epimodel
+```{r acts, echo=F}
+acts.mod <- glm(sex4wk ~ comb.age + ptype + duration, 
+                family = "poisson", 
+                weights=data2$weight, 
+                data=data2) 
+
+#rates2 <- unname(predict(actsMonthGlm2, data2, type = "response"))/4
+#acts2 <- rpois(length(rates2), rates2)
+```
+
+# Condom use per act 
+
+## Multivariate {.tabset}
+### w/o Duration
+```{r condoms-fullnoduration}
+c.svy.fullnodur <- svyglm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ comb.age + ptype, 
+               family=binomial, design=svydat) 
+summary(c.svy.fullnodur)
+```
+### w/ Duration 
+```{r condoms-fullduration}
+c.svy.fulldur <- svyglm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ comb.age + ptype + duration, 
+               family=binomial, design=svydat) 
+summary(c.svy.fulldur)
+```
+
+## Univariate {.tabset}
+### Combined Age 
+```{r condoms-age}
+c.svy.comb.age <- svyglm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ comb.age, 
+               family=binomial, design=svydat) 
+summary(c.svy.comb.age)
+```
+### Partership Type
+```{r condoms-ptype}
+c.svy.ptype <- svyglm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ ptype, 
+               family=binomial, design=svydat) 
+summary(c.svy.ptype)
+```
+### Duration 
+```{r condoms-duration}
+c.svy.dur <- svyglm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ duration, 
+               family=binomial, design=svydat) 
+summary(c.svy.dur)
+```
+## Output for EpiModel
+
+```{r, echo=F}
+condom.mod <- glm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ comb.age + ptype, 
+               family = "binomial", weights=data2$weight, data=data2) 
+#probs <- unname(predict(condoms, data, type = "response"))
+#condom.use <- rbinom(length(probs), 1, probs)
+```
+
+## Make list for EpiModel
+```{r epistats}
+epistats <- list(acts.mod, condom.mod)
+saveRDS(epistats, here("prep", "epistats.rds"))
+```

@@ -124,7 +124,7 @@ fit.marcoh <- ergm.ego(egodat_marcoh ~ edges +
                          nodecov(~ageF^2) +
                          nodecov(~ageM) + 
                          nodecov(~ageM^2) +
-                         nodefactor(~age<30) + 
+                         nodefactor(~agecat, levels=1:3) + 
                          nodefactor(~age>30) + 
                          absdiff(~sqrtage + 0.1511228*(male==0)) + 
                          nodefactor("deg.other.binary") +
@@ -257,12 +257,12 @@ fit.other <- ergm.ego(egodat_other ~ edges +
                         nodecov(~ageM^2) +
                         absdiff(~sqrtage + 0.14505*(male==0)) + 
                         nodefactor("deg.marcoh") +
+                        nodefactor("olderpartnerMC") + 
                         nodefactor(~ageM, levels=2:10) +
                         nodefactor(~ageF, levels=2:10) + 
                         concurrent(by=~male) +
-                        offset(nodematch("male", diff = FALSE)) +
-                        offset(nodefactor("olderpartnerO")),
-                        offset.coef = c(-Inf, -Inf), 
+                        offset(nodematch("male", diff = FALSE)),
+                        offset.coef = c(-Inf), 
                         control = x)
 
 #offset(nodefactor("debuted", levels=1)),

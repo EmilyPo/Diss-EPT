@@ -12,9 +12,8 @@ output:
 ---
 
 ```{r setup, message=F, warning=F}
-#library(ergm.ego)
 library(here)
-library(flexsurv)
+#library(flexsurv)
 library(srvyr)
 library(kableExtra)
 library(tidyverse)
@@ -144,13 +143,13 @@ summary(acts.dur)
 
 ## Multivariate 
 ```{r acts.full, echo=F}
-acts.full <- svyglm(sex4wk ~ comb.age + ptype + duration, family = "poisson", design=svydat) 
+acts.full <- svyglm(sex4wk ~ comb.age + ptype, family = "poisson", design=svydat) 
 summary(acts.full)
 ```
 
 ## Output for Epimodel
 ```{r acts, echo=F}
-acts.mod <- glm(sex4wk ~ comb.age + ptype + duration, 
+acts.mod <- glm(sex4wk ~ comb.age + ptype, 
                 family = "poisson", 
                 weights=data2$weight, 
                 data=data2) 
@@ -159,7 +158,7 @@ acts.mod <- glm(sex4wk ~ comb.age + ptype + duration,
 #acts2 <- rpois(length(rates2), rates2)
 ```
 
-# Condom use per act 
+# Condom use per act - Marcoh & Other
 
 ## Multivariate {.tabset}
 ### w/o Duration
@@ -188,12 +187,7 @@ c.svy.ptype <- svyglm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ ptype,
                family=binomial, design=svydat) 
 summary(c.svy.ptype)
 ```
-### Duration 
-```{r condoms-duration}
-c.svy.dur <- svyglm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ duration, 
-               family=binomial, design=svydat) 
-summary(c.svy.dur)
-```
+
 ## Output for EpiModel
 
 ```{r, echo=F}
@@ -201,6 +195,15 @@ condom.mod <- glm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ comb.age + ptype,
                family = "binomial", weights=data2$weight, data=data2) 
 #probs <- unname(predict(condoms, data, type = "response"))
 #condom.use <- rbinom(length(probs), 1, probs)
+```
+
+# Condom use per act - Inst
+in nsfg, only females asked if they used condom at last sex
+here we pull probability that females report using condom using "once" encounters
+note: of the 168 inst encounters in data, 19 are reported by females
+```{r inst}
+once <- data2 %>% filter(once==1)
+mean(once$condls, na.rm=T)
 ```
 
 ## Make list for EpiModel

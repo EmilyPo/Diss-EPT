@@ -125,8 +125,12 @@ svydat <- as_survey_design(data2, id=ego, weights=weight)
 ## Univariate {.tabset}
 ### Combined Age 
 ```{r acts.age}
-acts.age <- svyglm(sex4wk ~ comb.age, family = "poisson", design=svydat) 
+acts.age <- svyglm(sex4wk ~ comb.age, family = "poisson", design=svydat)
+acts.age2 <- svyglm(sex4wk ~ comb.age + I(comb.age^2), family = "poisson", design=svydat) 
 summary(acts.age)
+AIC(acts.age)
+summary(acts.age2)
+AIC(acts.age2)
 ```
 
 ### Partnership Type
@@ -144,17 +148,19 @@ summary(acts.dur)
 ## Multivariate 
 ```{r acts.full, echo=F}
 acts.full <- svyglm(sex4wk ~ comb.age + ptype, family = "poisson", design=svydat) 
+acts.full2 <- svyglm(sex4wk ~ comb.age + I(comb.age^2) + ptype, family = "poisson", design=svydat) 
 summary(acts.full)
+summary(acts.full2)
 ```
 
 ## Output for Epimodel
 ```{r acts, echo=F}
-acts.mod <- glm(sex4wk ~ comb.age + ptype, 
+acts.mod <- glm(sex4wk ~ comb.age + I(comb.age^2) + ptype, 
                 family = "poisson", 
                 weights=data2$weight, 
                 data=data2) 
 
-#rates2 <- unname(predict(actsMonthGlm2, data2, type = "response"))/4
+#rates2 <- unname(predict(acts.mod, data2, type = "response"))/4
 #acts2 <- rpois(length(rates2), rates2)
 ```
 
@@ -191,8 +197,9 @@ summary(c.svy.ptype)
 ## Output for EpiModel
 
 ```{r, echo=F}
-condom.mod <- glm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ comb.age + ptype, 
+condom.mod <- glm(formula = cbind(cond4wk, sex4wk-cond4wk) ~ comb.age + I(comb.age^2) + ptype, 
                family = "binomial", weights=data2$weight, data=data2) 
+
 #probs <- unname(predict(condoms, data, type = "response"))
 #condom.use <- rbinom(length(probs), 1, probs)
 ```

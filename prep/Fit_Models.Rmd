@@ -15,7 +15,6 @@ output:
 library(ergm.ego)
 library(EpiModel)
 library(parallel)
-library(egonet)
 library(here)
 source("~/Documents/Dissertation/R/Duration/Functions/finalEgodataPrep.R") # generates the egodata objects
 source("~/Documents/Dissertation/R/EPT/prep/setup_params2.R") # object with params of interest 
@@ -153,6 +152,32 @@ marcoh.netest <- ego.netest(fit.marcoh, DissolutionMarcoh)
 summary(fit.marcoh)
 ```
 
+```{r marcoh-noconc}
+x <- control.ergm.ego(ppopsize = 1, ppop.wt = "sample",
+                      ergm.control = control.ergm(MCMLE.maxit = 200,
+                                                  MCMC.interval = MCMCinterval,
+                                                  MCMC.burnin = MCMCburnin))
+
+x$ppopsize <- mpop
+
+fit.marcoh.noconc <- ergm.ego(egodat_marcoh ~ edges + 
+                         nodecov(~ageF) + 
+                         nodecov(~ageF^2) +
+                         nodecov(~ageM) + 
+                         nodecov(~ageM^2) +
+                         nodefactor(~agecat, levels=1:3) + 
+                         nodefactor(~age>30) + 
+                         absdiff(~sqrtage + 0.1511228*(male==0)) + 
+                         offset(nodefactor("deg.other.binary")) +
+                         offset(nodematch("male", diff = FALSE)) +
+                         offset(nodefactor("olderpartnerMC")) +
+                         offset("concurrent"), 
+                         offset.coef = c(-Inf, -Inf, -Inf, -Inf), 
+                         control = x)
+
+saveRDS(fit.marcoh.noconc, here("fits", "fit.marcoh.noconc.rds"))
+marcoh.netest.noconc <- ego.netest(fit.marcoh.noconc, DissolutionMarcoh)
+```
 ## MCMC Diagnostics / GOF
 ```{r, warning=F, message=F, comment = F, results='hide', fig.keep='all'}
 mcmc.diagnostics(fit.marcoh)
@@ -495,6 +520,135 @@ sqrtages$diff <- sqrtages[,1] - sqrtages[,2]
 mean(sqrtages$diff)
 ```
 
+# Other Network  - No Concurrency {.tabset .tabset-pills .tabset-fade}
+
+## Fit
+```{r, eval=F } 
+dat$shift.other
+
+x <- control.ergm.ego(ppopsize = 1, ppop.wt = "sample",
+                      ergm.control = control.ergm(MCMLE.maxit = 200,
+                                                  MCMC.interval = MCMCinterval,
+                                                  MCMC.burnin = MCMCburnin))
+
+x$ppopsize <- mpop
+
+fit.other.noconc <- ergm.ego(egodat_other ~ edges + 
+                        nodecov(~ageF) + 
+                        nodecov(~ageF^2) +
+                        nodecov(~ageM) + 
+                        nodecov(~ageM^2) +
+                        absdiff(~sqrtage + 0.14505*(male==0)) + 
+                        nodefactor(~ageM, levels=2:10) +
+                        nodefactor(~ageF, levels=2:10) + 
+                        offset("concurrent") +
+                        offset(nodefactor("deg.marcoh")) +
+                        offset(nodefactor("olderpartnerMC")) + 
+                        offset(nodematch("male", diff = FALSE)),
+                        offset.coef = c(-Inf, -Inf, -Inf, -Inf), 
+                        control = x)
+
+saveRDS(fit.other.noconc, here("fits", "fit.other.noconc.rds"))
+other.netest.noconc <- ego.netest(fit.other.noconc, DissolutionOther)
+```
+
+
+```{r}
+fit.other <- readRDS(here("fits", "fit.other.rds"))
+other.netest <- ego.netest(fit.other, DissolutionOther)
+summary(fit.other)
+
+fit.other.avgconc <- readRDS(here("fits", "fit.other.avgconc.rds"))
+other.netest.avgconc <- ego.netest(fit.other.avgconc, DissolutionOther)
+```
+
+## MCMC Diagnostics / GOF
+```{r, warning=F, message=F, comment = F, results='hide', fig.keep='all'}
+mcmc.diagnostics(fit.other)
+```
+
+```{r, eval=F}
+gof.o <- gof(fit.other, GOF = "model")
+saveRDS(gof.o, here("fits", "gof.o.rds"))
+```
+
+```{r}
+gof.o <- readRDS(here("fits", "gof.o.rds"))
+plot(gof.o)
+```
+
+## Static Diagnostic 
+```{r }
+static.other <- netdx(other.netest, nsims = 500, dynamic = FALSE)
+saveRDS(static.other, here("fits", "static.other.rds"))
+```
+
+```{r, eval=F}
+static.other <- readRDS(here("fits", "static.other.rds"))
+static.other
+plot(static.other)
+```
+
+## Dynamic Diagnostic
+
+```{r, eval=F}
+dynamic.other <- netdx(other.netest, nsims = 5, nsteps = 1000, ncores = np,
+                       set.control.ergm = control.simulate.ergm(MCMC.burnin=1e5, 
+                                                                MCMC.interval=1e5),
+                       set.control.stergm = control.simulate.network(MCMC.burnin.min=1e5,
+                                                                     MCMC.burnin.max=1e5))
+saveRDS(dynamic.other, here("fits", "dynamic.other.rds"))
+```
+
+```{r}
+dynamic.other <- readRDS(here("fits", "dynamic.other.rds"))
+dynamic.other
+plot(dynamic.other)
+plot(dynamic.other, type = "duration")
+plot(dynamic.other, type = "dissolution")
+```
+
+## Checking Mean Deg Dist by Age/Sex and Age/Sex Mixing are close to data  
+```{r diag-diagnostic, out.width="70%"}
+n <- dynamic.other$nw
+#n <- fit.other$newnetwork
+
+# mean deg dist 
+plot(summary(n ~ nodefactor(~ageM)), type="l", main="Males")
+lines(mo, pch=19, col="blue")
+legend("topright", legend = c("Empirical", "Model"), col=c("blue", "black"), lwd=1)
+
+plot(summary(n ~ nodefactor(~ageF)), type="l", main="Females")
+lines(fo, col="blue")
+legend("topright", legend = c("Empirical", "Model"), col=c("blue", "black"), lwd=1)
+
+# age/sex mixing
+aF <- n %v% "ageF"
+aM <- n %v% "ageM" 
+
+el <- as.edgelist(n)
+fem1 <- aF[el[,1]]
+fem2 <- aF[el[,2]]
+male1 <- aM[el[,1]]
+male2 <- aM[el[,2]]
+
+allFs <- NULL
+allMs <- NULL 
+
+for (i in 1:length(fem1)){
+  if (fem1[i] != 0) {allFs[i] <- fem1[i]} 
+  else {allFs[i] <- fem2[i]}
+  
+  if (male1[i] != 0) {allMs[i] <- male1[i]} 
+  else {allMs[i] <- male2[i]}
+  }
+
+agesel <- as.data.frame(cbind(allFs, allMs))
+sqrtages <- sqrt(agesel)
+sqrtages$diff <- sqrtages[,1] - sqrtages[,2]
+mean(sqrtages$diff)
+```
+
 # One-Time Network {.tabset .tabset-pills .tabset-fade}
 
 ## Fit
@@ -529,4 +683,7 @@ saveRDS(netests, here("fits", "netests.rds"))
 
 netests_avgconc <- list(marcoh.netest, other.netest.avgconc, once.netest)
 saveRDS(netests_avgconc, here("fits", "netests_avgconc.rds"))
+
+netests_noconc <- list(marcoh.netest.noconc, other.netest.noconc, once.netest)
+saveRDS(netests_noconc, here("fits", "netests_noconc.rds"))
 ```

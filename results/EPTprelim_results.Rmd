@@ -1,0 +1,150 @@
+---
+title: "EPT Results"
+author: "Emily Pollock"
+date: "4/15/2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r s, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(kableExtra)
+library(tidyverse)
+source("~/Documents/Dissertation/R/EPT/functions/analyze_sims.R")
+s1 <- readRDS(here("sims", "simBase.rds"))
+s2 <- readRDS(here("sims", "simBase2.rds"))
+s1ept <- readRDS(here("sims", "sim.base.highept.rds"))
+s2ept <- readRDS(here("sims", "sim.base.highept2.rds"))
+s1dur <- readRDS(here("sims", "sim.base.lowdur.rds"))
+s2dur <- readRDS(here("sims", "sim.base.lowdur2.rds"))
+s1eptdur <- readRDS(here("sims", "sim.base.highept.lowdur.rds"))
+
+```
+# Reinfection
+
+
+
+```{r base-reinfs}
+dat <- reinf(s1, s2, start = 1500)
+r <- as.data.frame(matrix(dat[[1]][c(1:3, 7:9)], nrow=2, byrow=T))
+row.names(r) <- c("Females", "Males")
+colnames(r) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
+kable(round(r, 3), caption="Mean Proportion of Infections that are Reinfections", row.names=T) %>%
+  kable_styling()
+
+d <- as.data.frame(matrix(dat[[1]][c(4:6, 10:12)], nrow=2, byrow=T))
+row.names(d) <- c("Females", "Males")
+colnames(d) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
+kable(round(d, 3), caption="Mean Proportion of Infections that are Reinfections Following a Diagnosis", row.names=T) %>%
+  kable_styling()
+```
+
+
+
+```{r base-reinfs-highept}
+dat2 <- reinf(s1ept, s2ept, start = 1500)
+r <- as.data.frame(matrix(dat2[[1]][c(1:3, 7:9)], nrow=2, byrow=T))
+row.names(r) <- c("Females", "Males")
+colnames(r) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
+kable(round(r, 3), caption="Mean Proportion of Infections that are Reinfections", row.names=T) %>%
+  kable_styling()
+
+d <- as.data.frame(matrix(dat2[[1]][c(4:6, 10:12)], nrow=2, byrow=T))
+row.names(d) <- c("Females", "Males")
+colnames(d) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
+kable(round(d, 3), caption="Mean Proportion of Infections that are Reinfections Following a Diagnosis", row.names=T) %>%
+  kable_styling()
+```
+
+
+```{r base-reinfs-lowdur}
+dat3 <- reinf(s1dur, s2dur, start = 1500)
+r <- as.data.frame(matrix(dat3[[1]][c(1:3, 7:9)], nrow=2, byrow=T))
+row.names(r) <- c("Females", "Males")
+colnames(r) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
+kable(round(r, 3), caption="Mean Proportion of Infections that are Reinfections", row.names=T) %>%
+  kable_styling()
+
+d <- as.data.frame(matrix(dat3[[1]][c(4:6, 10:12)], nrow=2, byrow=T))
+row.names(d) <- c("Females", "Males")
+colnames(d) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
+kable(round(d, 3), caption="Mean Proportion of Infections that are Reinfections Following a Diagnosis", row.names=T) %>%
+  kable_styling()
+```
+
+
+
+```{r base-reinfs-highept-lowdur}
+dat4 <- reinf(s1eptdur, start = 1500)
+r <- as.data.frame(matrix(dat4[[1]][c(1:3, 7:9)], nrow=2, byrow=T))
+row.names(r) <- c("Females", "Males")
+colnames(r) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
+kable(round(r, 3), caption="Mean Proportion of Infections that are Reinfections", row.names=T) %>%
+  kable_styling()
+
+d <- as.data.frame(matrix(dat4[[1]][c(4:6, 10:12)], nrow=2, byrow=T))
+row.names(d) <- c("Females", "Males")
+colnames(d) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
+kable(round(d, 3), caption="Mean Proportion of Infections that are Reinfections Following a Diagnosis", row.names=T) %>%
+  kable_styling()
+```
+
+## By Sex 
+```{r vis}
+sexvec <- c(rep("Female", 6), rep("Male",6))
+reinfvec <- rep(c(rep("By Prev InfTime", 3), rep("Following Diagnosis", 3)),2)
+months <- rep(c(12, 6, 3), 4)
+
+res <- as.data.frame(cbind(sexvec, reinfvec, months, dat[[1]], dat2[[1]], dat3[[1]], dat4[[1]]))
+colnames(res) <- c("Sex", "ReinfType", "Follow-Up Time", "1-Base", "2-HighEPT", "3-LowDur", "4-HighEPTLowDur")
+res <- res %>% pivot_longer(cols=c("1-Base", "2-HighEPT", "3-LowDur", "4-HighEPTLowDur"), names_to = "Sims")
+res$value <- as.numeric(res$value)
+
+res %>% 
+  ggplot(aes(x=Sims, y=value, col=`Follow-Up Time`)) +
+  geom_point(aes(shape=Sex), size=3) +
+  facet_wrap("ReinfType") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  ggtitle("Proportion of Weekly Cases that are Reinfections") 
+```
+
+## Difference in Reinfection Rate
+```{r diff}
+f <- res %>% filter(Sex=="Female")
+m <- res %>% filter(Sex=="Male")
+
+diff <- f[,-1]
+diff$value <- f$value - m$value
+
+diff %>% 
+  ggplot(aes(x=Sims, y=value, col=`Follow-Up Time`)) +
+  geom_point() +
+  facet_wrap("ReinfType")
+```
+
+## 6 months
+```{r six}
+fs <- f %>% filter(`Follow-Up Time`=="6")
+ms <- m %>% filter(`Follow-Up Time`=="6")
+diffs <- diff %>% filter(`Follow-Up Time`=="6")
+
+six <- cbind(fs, ms$value, diffs$value)
+colnames(six)[5:7] <- c("Female", "Male", "Diff")
+
+six <- six %>% 
+  select(-Sex) %>%
+  pivot_longer(cols = c("Female", "Male", "Diff"), names_to = "Subset")
+
+six %>% ggplot(aes(x=Sims, y=value, col=ReinfType)) +
+  geom_point() +
+  facet_wrap("Subset")
+```
+
+# Incidence 
+```{r ir}
+ir <- irate(s1, s2)
+irate <- data.frame(females=ir[[1]][1:6], males=ir[[1]][7:12])
+
+```

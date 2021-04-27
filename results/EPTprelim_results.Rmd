@@ -12,139 +12,161 @@ output:
 library(here)
 library(kableExtra)
 library(tidyverse)
-source("~/Documents/Dissertation/R/EPT/functions/analyze_sims.R")
-s1 <- readRDS(here("sims", "simBase.rds"))
-s2 <- readRDS(here("sims", "simBase2.rds"))
-s1ept <- readRDS(here("sims", "sim.base.highept.rds"))
-s2ept <- readRDS(here("sims", "sim.base.highept2.rds"))
-s1dur <- readRDS(here("sims", "sim.base.lowdur.rds"))
-s2dur <- readRDS(here("sims", "sim.base.lowdur2.rds"))
-s1eptdur <- readRDS(here("sims", "sim.base.highept.lowdur.rds"))
-
+source(here("functions", "analyze_sims.R"))
+s1 <- readRDS(here("sims", "fem.mod", "simBase.rds"))
+s2 <- readRDS(here("sims", "fem.mod", "simAvg.rds"))
+s3 <- readRDS(here("sims", "fem.mod", "simNc.rds"))
+s1ept <- readRDS(here("sims", "fem.mod", "simBaseEPT.rds"))
+s2ept <- readRDS(here("sims", "fem.mod", "simAvgEPT.rds"))
+s3ept <- readRDS(here("sims", "fem.mod", "simNcEPT.rds"))
 ```
 # Reinfection
 
+## Females
+```{r reinfs-female}
+dat <- reinf(s1, start = 1500)
+dat2 <- reinf(s2, start = 1500)
+dat3 <- reinf(s3, start = 1500)
+
+datept <- reinf(s1ept, start = 1500)
+dat2ept <- reinf(s2ept, start = 1500)
+dat3ept <- reinf(s3ept, start = 1500)
+
+## Any Reinfection
+r <- data.frame(`M/F Concurrency` = dat[[1]][1:3], 
+               `Avg Concurrency` = dat2[[1]][1:3],
+               `No Concurrency` = dat3[[1]][1:3])
+r$Treatment <- rep("Low Partner Treatment")
+
+r2 <- data.frame(`M/F Concurrency` = datept[[1]][1:3], 
+               `Avg Concurrency` = dat2ept[[1]][1:3],
+               `No Concurrency` = dat3ept[[1]][1:3])
+r2$Treatment <- rep("Incresed Partner Treatment")
+
+rfull <- rbind(r, r2)
+
+rfull$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),2), levels = c("Three", "Six", "Twelve"))
+rfull$ReinfType <- rep("Any",6)
+
+## Reinfection Following Diagnosis
+
+d <- data.frame(`M/F Concurrency` = dat[[1]][4:6], 
+               `Avg Concurrency` = dat2[[1]][4:6],
+               `No Concurrency` = dat3[[1]][4:6])
+d$Treatment <- rep("Low Partner Treatment")
+
+d2 <- data.frame(`M/F Concurrency` = datept[[1]][4:6], 
+               `Avg Concurrency` = dat2ept[[1]][4:6],
+               `No Concurrency` = dat3ept[[1]][4:6])
+d2$Treatment <- rep("Incresed Partner Treatment")
+
+dfull <- rbind(d, d2)
 
 
-```{r base-reinfs}
-dat <- reinf(s1, s2, start = 1500)
-r <- as.data.frame(matrix(dat[[1]][c(1:3, 7:9)], nrow=2, byrow=T))
-row.names(r) <- c("Females", "Males")
-colnames(r) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
-kable(round(r, 3), caption="Mean Proportion of Infections that are Reinfections", row.names=T) %>%
-  kable_styling()
+dfull$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),2), levels = c("Three", "Six", "Twelve"))
+dfull$ReinfType <- rep("Following Diagnosis",6)
 
-d <- as.data.frame(matrix(dat[[1]][c(4:6, 10:12)], nrow=2, byrow=T))
-row.names(d) <- c("Females", "Males")
-colnames(d) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
-kable(round(d, 3), caption="Mean Proportion of Infections that are Reinfections Following a Diagnosis", row.names=T) %>%
-  kable_styling()
+full <- rbind(rfull,dfull)
+full <- full %>% pivot_longer(cols=colnames(full[1:3]), names_to = "Behavior")
+
+full %>% ggplot(aes(x=Reinfection, y=value, col=Treatment)) +
+  geom_point(aes(shape=ReinfType), size=3) +
+  facet_wrap("Behavior")
 ```
 
+## Males
+```{r reinfs-male}
+## Any Reinfection
+r <- data.frame(`M/F Concurrency` = dat[[1]][7:9], 
+               `Avg Concurrency` = dat2[[1]][7:9],
+               `No Concurrency` = dat3[[1]][7:9])
+r$Treatment <- rep("Low Partner Treatment")
+
+r2 <- data.frame(`M/F Concurrency` = datept[[1]][7:9], 
+               `Avg Concurrency` = dat2ept[[1]][7:9],
+               `No Concurrency` = dat3ept[[1]][7:9])
+r2$Treatment <- rep("Incresed Partner Treatment")
+
+rfull <- rbind(r, r2)
+
+rfull$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),2), levels = c("Three", "Six", "Twelve"))
+rfull$ReinfType <- rep("Any",6)
+
+## Reinfection Following Diagnosis
+
+d <- data.frame(`M/F Concurrency` = dat[[1]][10:12], 
+               `Avg Concurrency` = dat2[[1]][10:12],
+               `No Concurrency` = dat3[[1]][10:12])
+d$Treatment <- rep("Low Partner Treatment")
+
+d2 <- data.frame(`M/F Concurrency` = datept[[1]][10:12], 
+               `Avg Concurrency` = dat2ept[[1]][10:12],
+               `No Concurrency` = dat3ept[[1]][10:12])
+d2$Treatment <- rep("Incresed Partner Treatment")
+
+dfull <- rbind(d, d2)
 
 
-```{r base-reinfs-highept}
-dat2 <- reinf(s1ept, s2ept, start = 1500)
-r <- as.data.frame(matrix(dat2[[1]][c(1:3, 7:9)], nrow=2, byrow=T))
-row.names(r) <- c("Females", "Males")
-colnames(r) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
-kable(round(r, 3), caption="Mean Proportion of Infections that are Reinfections", row.names=T) %>%
-  kable_styling()
+dfull$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),2), levels = c("Three", "Six", "Twelve"))
+dfull$ReinfType <- rep("Following Diagnosis",6)
 
-d <- as.data.frame(matrix(dat2[[1]][c(4:6, 10:12)], nrow=2, byrow=T))
-row.names(d) <- c("Females", "Males")
-colnames(d) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
-kable(round(d, 3), caption="Mean Proportion of Infections that are Reinfections Following a Diagnosis", row.names=T) %>%
-  kable_styling()
-```
+full <- rbind(rfull,dfull)
+full <- full %>% pivot_longer(cols=colnames(full[1:3]), names_to = "Behavior")
 
-
-```{r base-reinfs-lowdur}
-dat3 <- reinf(s1dur, s2dur, start = 1500)
-r <- as.data.frame(matrix(dat3[[1]][c(1:3, 7:9)], nrow=2, byrow=T))
-row.names(r) <- c("Females", "Males")
-colnames(r) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
-kable(round(r, 3), caption="Mean Proportion of Infections that are Reinfections", row.names=T) %>%
-  kable_styling()
-
-d <- as.data.frame(matrix(dat3[[1]][c(4:6, 10:12)], nrow=2, byrow=T))
-row.names(d) <- c("Females", "Males")
-colnames(d) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
-kable(round(d, 3), caption="Mean Proportion of Infections that are Reinfections Following a Diagnosis", row.names=T) %>%
-  kable_styling()
-```
-
-
-
-```{r base-reinfs-highept-lowdur}
-dat4 <- reinf(s1eptdur, start = 1500)
-r <- as.data.frame(matrix(dat4[[1]][c(1:3, 7:9)], nrow=2, byrow=T))
-row.names(r) <- c("Females", "Males")
-colnames(r) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
-kable(round(r, 3), caption="Mean Proportion of Infections that are Reinfections", row.names=T) %>%
-  kable_styling()
-
-d <- as.data.frame(matrix(dat4[[1]][c(4:6, 10:12)], nrow=2, byrow=T))
-row.names(d) <- c("Females", "Males")
-colnames(d) <- c("Within 1 Year", "Within 6 Months", "Within 3 Months")
-kable(round(d, 3), caption="Mean Proportion of Infections that are Reinfections Following a Diagnosis", row.names=T) %>%
-  kable_styling()
-```
-
-## By Sex 
-```{r vis}
-sexvec <- c(rep("Female", 6), rep("Male",6))
-reinfvec <- rep(c(rep("By Prev InfTime", 3), rep("Following Diagnosis", 3)),2)
-months <- rep(c(12, 6, 3), 4)
-
-res <- as.data.frame(cbind(sexvec, reinfvec, months, dat[[1]], dat2[[1]], dat3[[1]], dat4[[1]]))
-colnames(res) <- c("Sex", "ReinfType", "Follow-Up Time", "1-Base", "2-HighEPT", "3-LowDur", "4-HighEPTLowDur")
-res <- res %>% pivot_longer(cols=c("1-Base", "2-HighEPT", "3-LowDur", "4-HighEPTLowDur"), names_to = "Sims")
-res$value <- as.numeric(res$value)
-
-res %>% 
-  ggplot(aes(x=Sims, y=value, col=`Follow-Up Time`)) +
-  geom_point(aes(shape=Sex), size=3) +
-  facet_wrap("ReinfType") +
-  theme(axis.text.x = element_text(angle = 45)) +
-  ggtitle("Proportion of Weekly Cases that are Reinfections") 
-```
-
-## Difference in Reinfection Rate
-```{r diff}
-f <- res %>% filter(Sex=="Female")
-m <- res %>% filter(Sex=="Male")
-
-diff <- f[,-1]
-diff$value <- f$value - m$value
-
-diff %>% 
-  ggplot(aes(x=Sims, y=value, col=`Follow-Up Time`)) +
-  geom_point() +
-  facet_wrap("ReinfType")
-```
-
-## 6 months
-```{r six}
-fs <- f %>% filter(`Follow-Up Time`=="6")
-ms <- m %>% filter(`Follow-Up Time`=="6")
-diffs <- diff %>% filter(`Follow-Up Time`=="6")
-
-six <- cbind(fs, ms$value, diffs$value)
-colnames(six)[5:7] <- c("Female", "Male", "Diff")
-
-six <- six %>% 
-  select(-Sex) %>%
-  pivot_longer(cols = c("Female", "Male", "Diff"), names_to = "Subset")
-
-six %>% ggplot(aes(x=Sims, y=value, col=ReinfType)) +
-  geom_point() +
-  facet_wrap("Subset")
+full %>% ggplot(aes(x=Reinfection, y=value, col=Treatment)) +
+  geom_point(aes(shape=ReinfType), size=3) +
+  facet_wrap("Behavior")
 ```
 
 # Incidence 
-```{r ir}
-ir <- irate(s1, s2)
-irate <- data.frame(females=ir[[1]][1:6], males=ir[[1]][7:12])
+```{r incid-female}
+dat <- irate(s1, start = 1500)
+dat2 <- irate(s2, start = 1500)
+dat3 <- irate(s3, start = 1500)
+datept <- irate(s1ept, start = 1500)
+dat2ept <- irate(s2ept, start = 1500)
+dat3ept <- irate(s3ept, start = 1500)
 
+i.fem.s1 <- dat[[1]][1:6]
+i.male.s1 <- dat[[1]][7:12]
+i.fem.s2 <- dat2[[1]][1:6]
+i.male.s2 <- dat2[[1]][7:12]
+i.fem.s3 <- dat3[[1]][1:6]
+i.male.s3 <- dat3[[1]][7:12]
+
+i.fem.s1ept <- datept[[1]][1:6]
+i.male.s1ept <- datept[[1]][7:12]
+i.fem.s2ept <- dat2ept[[1]][1:6]
+i.male.s2ept <- dat2ept[[1]][7:12]
+i.fem.s3ept <- dat3ept[[1]][1:6]
+i.male.s3ept <- dat3ept[[1]][7:12]
+
+fems <- data.frame("M.F.Concurrency" = i.fem.s1, "Avg.Concurrency" = i.fem.s2, "No.Concurrency" = i.fem.s3)
+fems2 <- data.frame("M.F.Concurrency" = i.fem.s1ept, "Avg.Concurrency" = i.fem.s2ept, "No.Concurrency" = i.fem.s3ept)
+
+femFull <- rbind(fems, fems2)
+femFull$AgeCat <- factor(rep(c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44"),2))
+femFull$Treatment <- c(rep("Low Partner Treatment", 6), rep("Increased Partner Treatment", 6))
+
+femFull <- femFull %>% pivot_longer(cols=colnames(femFull)[1:3], names_to = "Behavior")
+
+femFull %>% ggplot(aes(x=AgeCat, y=value, col=Treatment)) +
+  geom_point() +
+  facet_wrap("Behavior")
+```
+
+## Males
+```{r incid-male}
+males <- data.frame("M.F.Concurrency" = i.male.s1, "Avg.Concurrency" = i.male.s2, "No.Concurrency" = i.male.s3)
+males2 <- data.frame("M.F.Concurrency" = i.male.s1ept, "Avg.Concurrency" = i.male.s2ept, "No.Concurrency" = i.male.s3ept)
+
+maleFull <- rbind(males, males2)
+maleFull$AgeCat <- factor(rep(c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44"),2))
+maleFull$Treatment <- c(rep("Low Partner Treatment", 6), rep("Increased Partner Treatment", 6))
+
+maleFull <- maleFull %>% pivot_longer(cols=colnames(maleFull)[1:3], names_to = "Behavior")
+
+maleFull %>% ggplot(aes(x=AgeCat, y=value, col=Treatment)) +
+  geom_point() +
+  facet_wrap("Behavior")
 ```

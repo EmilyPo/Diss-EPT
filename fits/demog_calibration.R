@@ -7,7 +7,9 @@ library(EpiModelHIV)
 source(here("functions", "ddaf_functions.R"))
 library(srvyr)
 library(ggplot2)
+epistats <- readRDS(here("prep", "epistats.rds"))
 
+#### Base Sim w/ Concurrency by Sex ####
 n <- readRDS(here("fits", "netests.rds"))
 n2 <- n
 
@@ -86,3 +88,173 @@ c <- r[[2]]
 
 mean(m$len)
 mean(c$len)
+
+#### Average Concurrency ####
+n <- readRDS(here("fits", "netests_avgconc.rds"))
+n2 <- n
+
+# 1: re-do EDA for log(D) instead of log(D-1)
+n2[[1]]$coef.form[1] <- n[[1]]$coef.form.crude[1] - log(n[[1]]$coef.diss$duration)
+n2[[2]]$coef.form[1] <- n[[2]]$coef.form.crude[1] - log(n[[2]]$coef.diss$duration)
+
+# 2: adjust coefficients 
+# mar
+n2[[1]]$coef.form["nodefactor.agecat.1"] <- n[[1]]$coef.form["nodefactor.agecat.1"] + 1.5
+n2[[1]]$coef.form["nodefactor.agecat.2"] <- n[[1]]$coef.form["nodefactor.agecat.2"] + 0.7
+n2[[1]]$coef.form["nodefactor.agecat.3"] <- n[[1]]$coef.form["nodefactor.agecat.3"] + 0.5
+n2[[1]]$coef.form["nodefactor.age>30.TRUE"] <- n[[1]]$coef.form["nodefactor.age>30.TRUE"] - 0.5
+
+#casual
+n2[[2]]$coef.form["nodefactor.ageM.15"]  <- n[[2]]$coef.form["nodefactor.ageM.15"] + 1.5
+n2[[2]]$coef.form["nodefactor.ageM.18"]  <- n[[2]]$coef.form["nodefactor.ageM.18"] + 0.4
+n2[[2]]$coef.form["nodefactor.ageF.15"]  <- n[[2]]$coef.form["nodefactor.ageF.15"] 
+
+sim <- netsim(n2,
+               param = param_het_ept(epistats, trackRels_sepNets = TRUE),
+               init = init_het_ct(prev.uct.male.young = 0, prev.uct.male.old = 0,
+                                      prev.uct.female.young = 0, prev.uct.female.old = 0,
+                                      arrival.prev.male=0, arrival.prev.female = 0),
+               control = control_het_ct(nsims = 1, nsteps=52*30))
+
+#saveRDS(sim, here("fits", "calibration_sim_inprogress.rds"))
+
+# degree plots 
+plot(sim, y=c("meanDegMarcoh"), legend=T)
+plot(sim, y=c("meanDegOther"), legend=T)
+
+mdist <- get_dist(sim, network=1, ndynamic=2)
+mdist[[1]];mdist[[2]]
+
+odist <- get_dist(sim, network=2, ndynamic=2)
+odist[[1]];odist[[2]]
+
+# what is the mean age of extant ties in each network
+# actually probably have to adjust marriages for if they started at beginning of sim
+# those should ties should have previous duration 
+
+r <- active_rels(sim, scenario = "ept")
+m <- r[[1]]
+c <- r[[2]]
+
+mean(m$len)
+mean(c$len)
+
+# decrease underlying dissolution probability 
+n2[[1]]$coef.diss$coef.adj <- log(n[[1]]$coef.diss$duration*2.5)
+n2[[2]]$coef.diss$coef.adj <- log(n[[2]]$coef.diss$duration*1.03)
+
+simDur <- netsim(n2,
+                 param = param_het_ept(epistats, trackRels_sepNets = TRUE),
+                 init = init_het_ct(prev.uct.male.young = 0, prev.uct.male.old = 0,
+                                    prev.uct.female.young = 0, prev.uct.female.old = 0,
+                                    arrival.prev.male=0, arrival.prev.female = 0),
+                 control = control_het_ct(nsims = 1, nsteps=52*30))
+
+saveRDS(simDur, here("fits", "calibration_sim_duration.rds"))
+
+plot(simDur, y=c("meanDegMarcoh"), legend=T)
+plot(simDur, y=c("meanDegOther"), legend=T)
+
+mdist <- get_dist(simDur, network=1, ndynamic=2)
+mdist[[1]];mdist[[2]]
+
+odist <- get_dist(simDur, network=2, ndynamic=2)
+odist[[1]];odist[[2]]
+
+# what is the mean age of extant ties in each network
+# actually probably have to adjust marriages for if they started at beginning of sim
+# those should ties should have previous duration 
+
+r <- active_rels(simDur, scenario = "ept")
+m <- r[[1]]
+c <- r[[2]]
+
+mean(m$len) #496
+mean(c$len) #55.2
+
+saveRDS(n2, here("fits", "calibrated_netests_avgconc.rds"))
+
+#### No Concurrency ####
+n <- readRDS(here("fits", "netests_noconc.rds"))
+n2 <- n
+
+# 1: re-do EDA for log(D) instead of log(D-1)
+n2[[1]]$coef.form[1] <- n[[1]]$coef.form.crude[1] - log(n[[1]]$coef.diss$duration)
+n2[[2]]$coef.form[1] <- n[[2]]$coef.form.crude[1] - log(n[[2]]$coef.diss$duration)
+
+# 2: adjust coefficients 
+# mar
+n2[[1]]$coef.form["nodefactor.agecat.1"] <- n[[1]]$coef.form["nodefactor.agecat.1"] + 1.5
+n2[[1]]$coef.form["nodefactor.agecat.2"] <- n[[1]]$coef.form["nodefactor.agecat.2"] + 0.8
+n2[[1]]$coef.form["nodefactor.agecat.3"] <- n[[1]]$coef.form["nodefactor.agecat.3"] + 0.5
+n2[[1]]$coef.form["nodefactor.age>30.TRUE"] <- n[[1]]$coef.form["nodefactor.age>30.TRUE"] - 0.7
+
+#casual
+n2[[2]]$coef.form["nodefactor.ageM.15"]  <- n[[2]]$coef.form["nodefactor.ageM.15"] + 1.5
+n2[[2]]$coef.form["nodefactor.ageM.18"]  <- n[[2]]$coef.form["nodefactor.ageM.18"] + 0.6
+n2[[2]]$coef.form["nodefactor.ageF.15"]  <- n[[2]]$coef.form["nodefactor.ageF.15"] 
+
+sim <- netsim(n2,
+              param = param_het_ept(epistats, trackRels_sepNets = TRUE),
+              init = init_het_ct(prev.uct.male.young = 0, prev.uct.male.old = 0,
+                                 prev.uct.female.young = 0, prev.uct.female.old = 0,
+                                 arrival.prev.male=0, arrival.prev.female = 0),
+              control = control_het_ct(nsims = 1, nsteps=52*30))
+
+#saveRDS(sim, here("fits", "calibration_sim_inprogress.rds"))
+
+# degree plots 
+plot(sim, y=c("meanDegMarcoh"), legend=T)
+plot(sim, y=c("meanDegOther"), legend=T)
+
+mdist <- get_dist(sim, network=1, ndynamic=2)
+mdist[[1]];mdist[[2]]
+
+odist <- get_dist(sim, network=2, ndynamic=2)
+odist[[1]];odist[[2]]
+
+# what is the mean age of extant ties in each network
+# actually probably have to adjust marriages for if they started at beginning of sim
+# those should ties should have previous duration 
+
+r <- active_rels(sim, scenario = "ept")
+m <- r[[1]]
+c <- r[[2]]
+
+mean(m$len)
+mean(c$len)
+
+# decrease underlying dissolution probability 
+n2[[1]]$coef.diss$coef.adj <- log(n[[1]]$coef.diss$duration*2.5)
+n2[[2]]$coef.diss$coef.adj <- log(n[[2]]$coef.diss$duration)
+
+simDur <- netsim(n2,
+                 param = param_het_ept(epistats, trackRels_sepNets = TRUE),
+                 init = init_het_ct(prev.uct.male.young = 0, prev.uct.male.old = 0,
+                                    prev.uct.female.young = 0, prev.uct.female.old = 0,
+                                    arrival.prev.male=0, arrival.prev.female = 0),
+                 control = control_het_ct(nsims = 2, nsteps=52*30))
+
+#saveRDS(simDur, here("fits", "calibration_sim_duration.rds"))
+
+plot(simDur, y=c("meanDegMarcoh"), legend=T)
+plot(simDur, y=c("meanDegOther"), legend=T)
+
+mdist <- get_dist(simDur, network=1, ndynamic=2)
+mdist[[1]];mdist[[2]]
+
+odist <- get_dist(simDur, network=2, ndynamic=2)
+odist[[1]];odist[[2]]
+
+# what is the mean age of extant ties in each network
+# actually probably have to adjust marriages for if they started at beginning of sim
+# those should ties should have previous duration 
+
+r <- active_rels(simDur, scenario = "ept")
+m <- r[[1]]
+c <- r[[2]]
+
+mean(m$len) #496
+mean(c$len) #55.2
+
+saveRDS(n2, here("fits", "calibrated_netests_noconc.rds"))

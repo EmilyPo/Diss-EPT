@@ -384,3 +384,28 @@ prev <- function(x, y=NULL, start=2000, end=NULL){
   
   return(list(females,males))
 }
+
+everInf <- function(x, y=NULL){
+  f <- NULL
+  m <- NULL
+  
+  for (i in 1:x$control$nsims){
+    fn <- length(which(x$attr[[i]]$male==0))
+    f1 <- length(which(x$attr[[i]]$male==0 & x$attr[[i]]$uCT.timesInf >=1))
+    f <- cbind(f, f1/fn)
+    
+    mn <- length(which(x$attr[[i]]$male==1))
+    m1 <- length(which(x$attr[[i]]$male==1 & x$attr[[i]]$uCT.timesInf >=1))
+    m <- cbind(m, m1/mn)
+  }
+  
+  f.mean <- mean(f)
+  f.se <- sd(f)/sqrt(length(f))
+  fs <- data.frame(mean=f.mean, low=f.mean-2*f.se, high=f.mean+2*f.se)
+  
+  m.mean <- mean(m)
+  m.se <- sd(m)/sqrt(length(m))
+  ms <- data.frame(mean=m.mean, low=m.mean-2*m.se, high=m.mean+2*m.se)
+  
+  return(list(fs, ms))
+}

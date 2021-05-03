@@ -657,7 +657,7 @@ breaks <- c(15, 20, 25, 30, 35, 40, 45)
 egodat_once$alters$agecat <- cut(egodat_once$alters$age, breaks, labels=F, right=F)
 
 fit.once <- ergm.ego(egodat_once ~ edges + 
-                        nodefactor(~agecat) +
+                        nodefactor(~agecat, levels=1:5) +
                         absdiff(~sqrtage) + 
                         nodefactor("deg.marcoh") +
                         nodefactor("deg.other.binary") +
@@ -668,11 +668,31 @@ fit.once <- ergm.ego(egodat_once ~ edges +
 saveRDS(fit.once, here("fits", "fit.once.rds"))
 ```
 
+## Fit - no conc
+```{r, eval=F } 
+breaks <- c(15, 20, 25, 30, 35, 40, 45)
+egodat_once$alters$agecat <- cut(egodat_once$alters$age, breaks, labels=F, right=F)
+
+fit.once.nc <- ergm.ego(egodat_once ~ edges + 
+                        nodefactor(~agecat, levels=1:5) +
+                        absdiff(~sqrtage) + 
+                        offset(nodefactor("deg.marcoh")) +
+                        offset(nodefactor("deg.other.binary")) +
+                        offset(nodematch("male", diff = FALSE)),
+                        offset.coef = c(rep(-Inf,3)), 
+                        control = x)
+
+saveRDS(fit.once.nc, here("fits", "fit.once.nc.rds"))
+```
+
+
 ## adjust edges for time-step rate not yearly count!
 ```{r}
 fit.once <- readRDS(here("fits", "fit.once.rds"))
-once.netest <- ego.netest(fit.once, DissolutionOnce, 
-                          obs.adjust = TRUE, obs.offset = 52)
+once.netest <- ee.netest(fit.once, DissolutionOnce, O.T.adjust = TRUE)
+summary(fit.once)
+
+once.netest.nc<- ee.netest(fit.once.nc, DissolutionOnce, O.T.adjust = TRUE)
 summary(fit.once)
 ```
 
@@ -684,6 +704,6 @@ saveRDS(netests, here("fits", "netests.rds"))
 netests_avgconc <- list(marcoh.netest, other.netest.avgconc, once.netest)
 saveRDS(netests_avgconc, here("fits", "netests_avgconc.rds"))
 
-netests_noconc <- list(marcoh.netest.noconc, other.netest.noconc, once.netest)
+netests_noconc <- list(marcoh.netest.noconc, other.netest.noconc, once.netest.nc)
 saveRDS(netests_noconc, here("fits", "netests_noconc.rds"))
 ```

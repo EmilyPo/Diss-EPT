@@ -17,20 +17,31 @@ library(here)
 library(kableExtra)
 library(tidyverse)
 source(here("functions", "analyze_sims.R"))
-s1 <- readRDS(here("sims", "fem.mod", "simBase.rds"))
-s2 <- readRDS(here("sims", "fem.mod", "simAvg.rds"))
-s3 <- readRDS(here("sims", "fem.mod", "simNc.rds"))
-s1ept <- readRDS(here("sims", "fem.mod", "simBaseEPT.rds"))
-s2ept <- readRDS(here("sims", "fem.mod", "simAvgEPT.rds"))
-s3ept <- readRDS(here("sims", "fem.mod", "simNcEPT.rds"))
-s1epthigh <- readRDS(here("sims", "fem.mod", "simBaseEPThigh.rds"))
-s2epthigh <- readRDS(here("sims", "fem.mod", "simAvgEPThigh.rds"))
-s3epthigh <- readRDS(here("sims", "fem.mod", "simNcEPThigh.rds"))
+
+s01 <- readRDS(here("sims", "may", "simBase0.rds"))
+s02 <- readRDS(here("sims", "may", "simAvg0.rds"))
+s03 <- readRDS(here("sims", "may", "simNc0.rds"))
+
+s1 <- readRDS(here("sims", "may", "simBase.rds"))
+s2 <- readRDS(here("sims", "may", "simAvg.rds"))
+s3 <- readRDS(here("sims", "may", "simNc.rds"))
+
+s1ept <- readRDS(here("sims", "may", "simBaseEPT.rds"))
+s2ept <- readRDS(here("sims", "may", "simAvgEPT.rds"))
+s3ept <- readRDS(here("sims", "may", "simNcEPT.rds"))
+
+s1epthigh <- readRDS(here("sims", "may", "simBaseEPThigh.rds"))
+s2epthigh <- readRDS(here("sims", "may", "simAvgEPThigh.rds"))
+s3epthigh <- readRDS(here("sims", "may", "simNcEPThigh.rds"))
+
+s1ept100 <- readRDS(here("sims", "may", "simBaseEPT100.rds"))
+s2ept100 <- readRDS(here("sims", "may", "simAvgEPT100.rds"))
+s3ept100 <- readRDS(here("sims", "may", "simNcEPT100.rds"))
 ```
 
 # Overview 
 
- - Three EPT Scenarios : Low, Medium, High (eventually will have 0%, 100%, others) 
+ - Five EPT Scenarios by index patient acceptance : 0, 25, 50, 75, All Ongoing Partnerships
  - Three Concurrency Scenarios: By Sex (higher male concurrency), Average, and No concurrency (one-offs ok)  
  - Each scenario run for 5 simulations for 80 years, analysis uses last ~40 years where epidemics are at equilibrium  
 

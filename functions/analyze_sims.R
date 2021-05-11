@@ -11,7 +11,7 @@ reinf <- function(x, y=NULL, start=2000, end=NULL){
   if (is.null(start)) {start <- x$param$ept.start + 52*5}
   if(is.null(end)) {end <- x$control$nsteps }
   
-
+  # -- reinfs in total pop by sex ----
   r12.f <- NULL
   r6.f <- NULL
   r3.f <- NULL
@@ -26,42 +26,65 @@ reinf <- function(x, y=NULL, start=2000, end=NULL){
   r6.m.diag <- NULL
   r3.m.diag <- NULL
   
+  
   for (i in 1:nsims){
-  # females
-  r12 <- x$epi$reinf.12.female[[i]][start:end]
-  r12.f <- cbind(r12.f, r12)
-  
-  r6 <- x$epi$reinf.6.female[[i]][start:end]
-  r6.f <- cbind(r6.f, r6)
-  
-  r3 <- x$epi$reinf.3.female[[i]][start:end]
-  r3.f <- cbind(r3.f, r3)
-  
-  r12.d <- x$epi$reinf.12.female.diag[[i]][start:end]
-  r12.f.diag <- cbind(r12.f.diag, r12.d)
-  r6.d <- x$epi$reinf.6.female.diag[[i]][start:end]
-  r6.f.diag <- cbind(r6.f.diag, r6.d)
-  r3.d <- x$epi$reinf.3.female.diag[[i]][start:end]
-  r3.f.diag <- cbind(r3.f.diag, r3.d)
-  
-
-  # males
-  r12 <- x$epi$reinf.12.male[[i]][start:end]
-  r12.m <- cbind(r12.m, r12)
-  r6 <- x$epi$reinf.6.male[[i]][start:end]
-  r6.m <- cbind(r6.m, r6)
-  r3 <- x$epi$reinf.3.male[[i]][start:end]
-  r3.m <- cbind(r3.m, r3)
-  
-  r12.d <- x$epi$reinf.12.male.diag[[i]][start:end]
-  r12.m.diag <- cbind(r12.m.diag, r12.d)
-  r6.d <- x$epi$reinf.6.male.diag[[i]][start:end]
-  r6.m.diag <- cbind(r6.m.diag, r6.d)
-  r3.d <- x$epi$reinf.3.male.diag[[i]][start:end]
-  r3.m.diag <- cbind(r3.m.diag, r3.d)
-
+    # females
+    r12 <- x$epi$reinf.12.female[[i]][start:end]
+    r12[is.infinite(r12)] <- 0
+    r12.f <- cbind(r12.f, r12)
+    
+    r6 <- x$epi$reinf.6.female[[i]][start:end]
+    r6[is.infinite(r6)] <- 0
+    r6.f <- cbind(r6.f, r6)
+    
+    r3 <- x$epi$reinf.3.female[[i]][start:end]
+    r3[is.infinite(r3)] <- 0
+    r3.f <- cbind(r3.f, r3)
+    
+    r12.d <- x$epi$reinf.12.female.diag[[i]][start:end]
+    r12.d[is.infinite(r12.d)] <- 0
+    r12.f.diag <- cbind(r12.f.diag, r12.d)
+    
+    r6.d <- x$epi$reinf.6.female.diag[[i]][start:end]
+    r6.d[is.infinite(r6.d)] <- 0
+    r6.f.diag <- cbind(r6.f.diag, r6.d)
+    
+    r3.d <- x$epi$reinf.3.female.diag[[i]][start:end]
+    r3.d[is.infinite(r3.d)] <- 0
+    r3.f.diag <- cbind(r3.f.diag, r3.d)
+    
+    
+    # males
+    r12 <- x$epi$reinf.12.male[[i]][start:end]
+    r12[is.infinite(r12)] <- 0
+    r12.m <- cbind(r12.m, r12)
+    
+    
+    r6 <- x$epi$reinf.6.male[[i]][start:end]
+    r6[is.infinite(r6)] <- 0
+    r6.m <- cbind(r6.m, r6)
+    
+    
+    r3 <- x$epi$reinf.3.male[[i]][start:end]
+    r3[is.infinite(r3)] <- 0
+    r3.m <- cbind(r3.m, r3)
+    
+    r12.d <- x$epi$reinf.12.male.diag[[i]][start:end]
+    r12.d[is.infinite(r12.d)] <- 0
+    r12.m.diag <- cbind(r12.m.diag, r12.d)
+    
+    r6.d <- x$epi$reinf.6.male.diag[[i]][start:end]
+    r6.d[is.infinite(r6.d)] <- 0
+    r6.m.diag <- cbind(r6.m.diag, r6.d)
+    
+    
+    r3.d <- x$epi$reinf.3.male.diag[[i]][start:end]
+    r3.d[is.infinite(r3.d)] <- 0
+    r3.m.diag <- cbind(r3.m.diag, r3.d)
+    
+    
   }
-
+  
   fems <- rbind(apply(r12.f, 2, mean, na.rm=T), 
                 apply(r6.f, 2, mean, na.rm=T),
                 apply(r3.f, 2, mean, na.rm=T),
@@ -83,8 +106,8 @@ reinf <- function(x, y=NULL, start=2000, end=NULL){
   fems.high <- fems.mean + 2*fems.se 
   
   females <- data.frame(mean = fems.mean,
-                         low = fems.low,
-                         high = fems.high)
+                        low = fems.low,
+                        high = fems.high)
   
   males.mean <- apply(males, 1, mean, na.rm=T)
   males.se <- apply(males, 1, sd, na.rm=T)/sqrt(ncol(males))
@@ -92,68 +115,118 @@ reinf <- function(x, y=NULL, start=2000, end=NULL){
   males.high <- males.mean + 2*males.se 
   
   males <- data.frame(mean = males.mean,
-                        low = males.low,
-                        high = males.high)
+                      low = males.low,
+                      high = males.high)
   
+  # -- reinfs in 20-24 pop by sex ----
   
-  if (!is.null(y)) {
-    x <- y
-    r12.f2 <- NULL
-    r6.f2 <- NULL
-    r3.f2 <- NULL
-    r12.f.diag2 <- NULL
-    r6.f.diag2 <- NULL
-    r3.f.diag2 <- NULL
+  r12.f <- NULL
+  r6.f <- NULL
+  r3.f <- NULL
+  r12.f.diag <- NULL
+  r6.f.diag <- NULL
+  r3.f.diag <- NULL
+  
+  r12.m <- NULL
+  r6.m <- NULL
+  r3.m <- NULL
+  r12.m.diag <- NULL
+  r6.m.diag <- NULL
+  r3.m.diag <- NULL
+  
+  for (i in 1:nsims){
+    # females
+    r12 <- x$epi$reinf.12.female2[[i]][start:end]
+    r12[is.infinite(r12)] <- 0
+    r12.f <- cbind(r12.f, r12)
     
-    r12.m2 <- NULL
-    r6.m2 <- NULL
-    r3.m2 <- NULL
-    r12.m.diag2 <- NULL
-    r6.m.diag2 <- NULL
-    r3.m.diag2 <- NULL
+    r6 <- x$epi$reinf.6.female2[[i]][start:end]
+    r6[is.infinite(r6)] <- 0
+    r6.f <- cbind(r6.f, r6)
     
-    for (i in 1:nsims){
-      # females
-      r12 <- x$epi$reinf.12.female[[i]][start:end]
-      r12.f2 <- cbind(r12.f2, r12)
-      
-      r6 <- x$epi$reinf.6.female[[i]][start:end]
-      r6.f2 <- cbind(r6.f2, r6)
-      r3 <- x$epi$reinf.3.female[[i]][start:end]
-      r3.f2 <- cbind(r3.f2, r3)
-      
-      r12.d <- x$epi$reinf.12.female.diag[[i]][start:end]
-      r12.f.diag2 <- cbind(r12.f.diag2, r12.d)
-      r6.d <- x$epi$reinf.6.female.diag[[i]][start:end]
-      r6.f.diag2 <- cbind(r6.f.diag2, r6.d)
-      r3.d <- x$epi$reinf.3.female.diag[[i]][start:end]
-      r3.f.diag2 <- cbind(r3.f.diag2, r3.d)
-      
-      # males
-      r12 <- x$epi$reinf.12.male[[i]][start:end]
-      r12.m2 <- cbind(r12.m2, r12)
-      r6 <- x$epi$reinf.6.male[[i]][start:end]
-      r6.m2 <- cbind(r6.m2, r6)
-      r3 <- x$epi$reinf.3.male[[i]][start:end]
-      r3.m2 <- cbind(r3.m2, r3)
-      
-      r12.d <- x$epi$reinf.12.male.diag[[i]][start:end]
-      r12.m.diag2 <- cbind(r12.m.diag2, r12.d)
-      r6.d <- x$epi$reinf.6.male.diag[[i]][start:end]
-      r6.m.diag2 <- cbind(r6.m.diag2, r6.d)
-      r3.d <- x$epi$reinf.3.male.diag[[i]][start:end]
-      r3.m.diag2 <- cbind(r3.m.diag2, r3.d)
-      
-      
-      dat <- cbind(c(r12.f, r12.f2), c(r6.f, r6.f2), c(r3.f, r3.f2),
-                   c(r12.f.diag, r12.f.diag2),  c(r6.f.diag, r6.f.diag2), c(r3.f.diag, r3.f.diag2), 
-                   c(r12.m, r12.m2), c(r6.m, r6.m2), c(r3.m, r3.m2),
-                   c(r12.m.diag, r12.m.diag2), c(r6.m.diag, r6.m.diag2), c(r3.m.diag, r3.m.diag2))
-    }
+    r3 <- x$epi$reinf.3.female2[[i]][start:end]
+    r3[is.infinite(r3)] <- 0
+    r3.f <- cbind(r3.f, r3)
+    
+    r12.d <- x$epi$reinf.12.female.diag2[[i]][start:end]
+    r12.d[is.infinite(r12.d)] <- 0
+    r12.f.diag <- cbind(r12.f.diag, r12.d)
+    
+    r6.d <- x$epi$reinf.6.female.diag2[[i]][start:end]
+    r6.d[is.infinite(r6.d)] <- 0
+    r6.f.diag <- cbind(r6.f.diag, r6.d)
+    
+    r3.d <- x$epi$reinf.3.female.diag2[[i]][start:end]
+    r3.d[is.infinite(r3.d)] <- 0
+    r3.f.diag <- cbind(r3.f.diag, r3.d)
+    
+    
+    # males
+    r12 <- x$epi$reinf.12.male2[[i]][start:end]
+    r12[is.infinite(r12)] <- 0
+    r12.m <- cbind(r12.m, r12)
+    
+    
+    r6 <- x$epi$reinf.6.male2[[i]][start:end]
+    r6[is.infinite(r6)] <- 0
+    r6.m <- cbind(r6.m, r6)
+    
+    
+    r3 <- x$epi$reinf.3.male2[[i]][start:end]
+    r3[is.infinite(r3)] <- 0
+    r3.m <- cbind(r3.m, r3)
+    
+    r12.d <- x$epi$reinf.12.male.diag.2[[i]][start:end]
+    r12.d[is.infinite(r12.d)] <- 0
+    r12.m.diag <- cbind(r12.m.diag, r12.d)
+    
+    r6.d <- x$epi$reinf.6.male.diag.2[[i]][start:end]
+    r6.d[is.infinite(r6.d)] <- 0
+    r6.m.diag <- cbind(r6.m.diag, r6.d)
+    
+    
+    r3.d <- x$epi$reinf.3.male.diag.2[[i]][start:end]
+    r3.d[is.infinite(r3.d)] <- 0
+    r3.m.diag <- cbind(r3.m.diag, r3.d)
+    
+    
   }
-
-  return(list(females, males))
-
+  
+  fems2 <- rbind(apply(r12.f, 2, mean, na.rm=T), 
+                 apply(r6.f, 2, mean, na.rm=T),
+                 apply(r3.f, 2, mean, na.rm=T),
+                 apply(r12.f.diag, 2, mean, na.rm=T),
+                 apply(r6.f.diag, 2, mean, na.rm=T),
+                 apply(r3.f.diag, 2, mean, na.rm=T))
+  
+  
+  males2 <- rbind(apply(r12.m, 2, mean, na.rm=T), 
+                  apply(r6.m, 2, mean, na.rm=T),
+                  apply(r3.m, 2, mean, na.rm=T),
+                  apply(r12.m.diag, 2, mean, na.rm=T),
+                  apply(r6.m.diag, 2, mean, na.rm=T),
+                  apply(r3.m.diag, 2, mean, na.rm=T))
+  
+  fems.mean2 <- apply(fems2, 1, mean, na.rm=T)
+  fems.se2 <- apply(fems2, 1, sd, na.rm=T)/sqrt(ncol(fems2))
+  fems.low2 <- fems.mean2 - 2*fems.se2 
+  fems.high2 <- fems.mean2 + 2*fems.se2 
+  
+  females2 <- data.frame(mean = fems.mean2,
+                         low = fems.low2,
+                         high = fems.high2)
+  
+  males.mean2 <- apply(males2, 1, mean, na.rm=T)
+  males.se2 <- apply(males2, 1, sd, na.rm=T)/sqrt(ncol(males))
+  males.low2 <- males.mean2 - 2*males.se2
+  males.high2 <- males.mean2 + 2*males.se2 
+  
+  males2 <- data.frame(mean = males.mean2,
+                       low = males.low2,
+                       high = males.high2)
+  
+  return(list(females, males, females2, males2))
+  
 }
 
 irate <- function(x, y=NULL, start=2000, end=NULL, denominator=100000){
@@ -385,27 +458,60 @@ prev <- function(x, y=NULL, start=2000, end=NULL){
   return(list(females,males))
 }
 
-everInf <- function(x, y=NULL){
-  f <- NULL
-  m <- NULL
+everInf <- function(x, y=NULL , start=2000, end=NULL){
   
-  for (i in 1:x$control$nsims){
-    fn <- length(which(x$attr[[i]]$male==0))
-    f1 <- length(which(x$attr[[i]]$male==0 & x$attr[[i]]$uCT.timesInf >=1))
-    f <- cbind(f, f1/fn)
+  if (is.null(start)) {start <- x$param$ept.start + 52*5}
+  if(is.null(end)) {end <- x$control$nsteps}
+  
+  nsims <- x$control$nsims
+  
+  fem <- NULL
+  male <- NULL
+
+    for (i in 1:nsims){
+      # females
+      fem1 <- x$epi$everInf.female[[i]][start:end]
+      fem <- cbind(fem, fem1)
+      
+      male1 <- x$epi$everInf.male[[i]][start:end]
+      male <- cbind(male, male1)
+      
+    }
     
-    mn <- length(which(x$attr[[i]]$male==1))
-    m1 <- length(which(x$attr[[i]]$male==1 & x$attr[[i]]$uCT.timesInf >=1))
-    m <- cbind(m, m1/mn)
-  }
+    fs <- apply(fem, 2, mean, na.rm=T)
+    fems.mean <- mean(fs)
+    fems.se <- sd(fs)/sqrt(length(fs))
+    fems.low <- fems.mean - 2*fems.se 
+    fems.high <- fems.mean + 2*fems.se 
+    
+    ms <- apply(male, 2, mean, na.rm=T)
+    males.mean <- mean(ms)
+    males.se <- sd(ms)/sqrt(length(ms))
+    males.low <- males.mean - 2*males.se 
+    males.high <- males.mean + 2*males.se 
+    
+    females <- data.frame(mean = fems.mean,
+                          low = fems.low,
+                          high = fems.high)
+    
+    males <- data.frame(mean = males.mean,
+                        low = males.low,
+                        high = males.high)
+    
   
-  f.mean <- mean(f)
-  f.se <- sd(f)/sqrt(length(f))
-  fs <- data.frame(mean=f.mean, low=f.mean-2*f.se, high=f.mean+2*f.se)
+  return(list(females, males))
+}
+
+analyze_sim <- function(x, y=NULL, start=2000, end=NULL) {
   
-  m.mean <- mean(m)
-  m.se <- sd(m)/sqrt(length(m))
-  ms <- data.frame(mean=m.mean, low=m.mean-2*m.se, high=m.mean+2*m.se)
+  if (is.null(start)) {start <- x$param$ept.start + 52*5}
+  if(is.null(end)) {end <- x$control$nsteps }
   
-  return(list(fs, ms))
+  reinf <- reinf(x, start=start, end=end)
+  irate <- irate(x, start=start, end=end)
+  prev <- prev(x, start=start, end=end)
+  everInf <- everInf(x, start=start, end=end)
+  
+  return(list(prev, irate, reinf, everInf))
+  
 }

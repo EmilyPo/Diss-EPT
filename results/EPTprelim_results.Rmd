@@ -18,81 +18,76 @@ library(kableExtra)
 library(tidyverse)
 source(here("functions", "analyze_sims.R"))
 
-s01 <- readRDS(here("sims", "may", "simBase0.rds"))
-s02 <- readRDS(here("sims", "may", "simAvg0.rds"))
-s03 <- readRDS(here("sims", "may", "simNc0.rds"))
+s01 <- readRDS(here("sims", "may2", "simBase0.rds"))
+s02 <- readRDS(here("sims", "may2", "simAvg0.rds"))
+s03 <- readRDS(here("sims", "may2", "simNc0.rds"))
 
-s1 <- readRDS(here("sims", "may", "simBase.rds"))
-s2 <- readRDS(here("sims", "may", "simAvg.rds"))
-s3 <- readRDS(here("sims", "may", "simNc.rds"))
+s1 <- readRDS(here("sims", "may2", "simBase.rds"))
+s2 <- readRDS(here("sims", "may2", "simAvg.rds"))
+s3 <- readRDS(here("sims", "may2", "simNc.rds"))
 
-s1ept <- readRDS(here("sims", "may", "simBaseEPT.rds"))
-s2ept <- readRDS(here("sims", "may", "simAvgEPT.rds"))
-s3ept <- readRDS(here("sims", "may", "simNcEPT.rds"))
+s1ept <- readRDS(here("sims", "may2", "simBaseEPT.rds"))
+s2ept <- readRDS(here("sims", "may2", "simAvgEPT.rds"))
+s3ept <- readRDS(here("sims", "may2", "simNcEPT.rds"))
 
-s1epthigh <- readRDS(here("sims", "may", "simBaseEPThigh.rds"))
-s2epthigh <- readRDS(here("sims", "may", "simAvgEPThigh.rds"))
-s3epthigh <- readRDS(here("sims", "may", "simNcEPThigh.rds"))
+s1epthigh <- readRDS(here("sims", "may2", "simBaseEPThigh.rds"))
+s2epthigh <- readRDS(here("sims", "may2", "simAvgEPThigh.rds"))
+s3epthigh <- readRDS(here("sims", "may2", "simNcEPThigh.rds"))
 
-s1ept100 <- readRDS(here("sims", "may", "simBaseEPT100.rds"))
-s2ept100 <- readRDS(here("sims", "may", "simAvgEPT100.rds"))
-s3ept100 <- readRDS(here("sims", "may", "simNcEPT100.rds"))
+s1ept100 <- readRDS(here("sims", "may2", "simBaseEPT100.rds"))
+s2ept100 <- readRDS(here("sims", "may2", "simAvgEPT100.rds"))
+s3ept100 <- readRDS(here("sims", "may2", "simNcEPT100.rds"))
+
+dat0 <- analyze_sim(s01, start = 2000)
+dat02 <- analyze_sim(s02, start = 2000)
+dat03 <- analyze_sim(s03, start = 2000)
+
+dat <- analyze_sim(s1, start = 2000)
+dat2 <- analyze_sim(s2, start = 2000)
+dat3 <- analyze_sim(s3, start = 2000)
+
+datept <- analyze_sim(s1ept, start = 2000)
+dat2ept <- analyze_sim(s2ept, start = 2000)
+dat3ept <- analyze_sim(s3ept, start = 2000)
+
+datepthigh <- analyze_sim(s1epthigh, start = 2000)
+dat2epthigh <- analyze_sim(s2epthigh, start = 2000)
+dat3epthigh <- analyze_sim(s3epthigh, start = 2000)
+
+datept1 <- analyze_sim(s1ept100, start = 2000)
+dat2ept1 <- analyze_sim(s2ept100, start = 2000)
+dat3ept1 <- analyze_sim(s3ept100, start = 2000)
 ```
 
 # Overview 
 
  - Five EPT Scenarios by index patient acceptance : 0, 25, 50, 75, All Ongoing Partnerships
- - Three Concurrency Scenarios: By Sex (higher male concurrency), Average, and No concurrency (one-offs ok)  
+ - Three Concurrency Scenarios: By Sex (higher male concurrency), Average, and No concurrency
  - Each scenario run for 5 simulations for 80 years, analysis uses last ~40 years where epidemics are at equilibrium  
 
 
 # Prevalence {.tabset}
 ## Plot
 ```{r prev}
-dat <- prev(s1, start = 2000)
-dat2 <- prev(s2, start = 2000)
-dat3 <- prev(s3, start = 2000)
-datept <- prev(s1ept, start = 2000)
-dat2ept <- prev(s2ept, start = 2000)
-dat3ept <- prev(s3ept, start = 2000)
-datepthigh <- prev(s1epthigh, start = 2000)
-dat2epthigh <- prev(s2epthigh, start = 2000)
-dat3epthigh <- prev(s3epthigh, start = 2000)
+library(tidyverse)
+femaleprev <- rbind(dat0[[1]][[1]], dat[[1]][[1]], datept[[1]][[1]], datepthigh[[1]][[1]], datept1[[1]][[1]], 
+                    dat02[[1]][[1]], dat2[[1]][[1]], dat2ept[[1]][[1]], dat2epthigh[[1]][[1]], dat2ept1[[1]][[1]], 
+                    dat03[[1]][[1]], dat3[[1]][[1]], dat2ept[[1]][[1]], dat3epthigh[[1]][[1]], dat3ept1[[1]][[1]])
 
+femaleprev$Behavior <- factor(c(rep("M.F.Concurrency", 5), rep("Avg.Concurrency", 5), rep("No.Concurrency", 5)), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
 
-femaleprev <- rbind(dat[[1]], datept[[1]], datepthigh[[1]],
-                     dat2[[1]], dat2ept[[1]], dat2epthigh[[1]],
-                     dat3[[1]], dat2ept[[1]], dat3epthigh[[1]])
+femaleprev$Treatment = factor(rep(c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"),3), levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
 
-femaleprev$Behavior <- factor(c(rep("M.F.Concurrency", 3), rep("Avg.Concurrency", 3), rep("No.Concurrency", 3)), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
-femaleprev$Treatment = factor(rep(c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"),3), levels = c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"))
+maleprev <- rbind(dat0[[1]][[2]], dat[[1]][[2]], datept[[1]][[2]], datepthigh[[1]][[2]], datept1[[1]][[2]], 
+                    dat02[[1]][[2]], dat2[[1]][[2]], dat2ept[[1]][[2]], dat2epthigh[[1]][[2]], dat2ept1[[1]][[2]], 
+                    dat03[[1]][[2]], dat3[[1]][[2]], dat2ept[[1]][[2]], dat3epthigh[[1]][[2]], dat3ept1[[1]][[2]])
 
-#femaleprev %>% ggplot(aes(x=Treatment, y=mean)) +
-#  geom_point() +
-#  geom_line(aes(x=Treatment, y=mean, group=Behavior)) +
-#  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-#  facet_wrap(~Behavior) +
-#  theme(axis.text.x = element_text(angle = 45)) +
-#  ylim(0,0.05)
+maleprev$Behavior <- factor(c(rep("M.F.Concurrency", 5), rep("Avg.Concurrency", 5), rep("No.Concurrency", 5)), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
 
-maleprev <- rbind(dat[[2]], datept[[2]], datepthigh[[2]],
-                     dat2[[2]], dat2ept[[2]], dat2epthigh[[2]],
-                     dat3[[2]], dat2ept[[2]], dat3epthigh[[2]])
-
-maleprev$Behavior <- factor(c(rep("M.F.Concurrency", 3), rep("Avg.Concurrency", 3), rep("No.Concurrency", 3)), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
-maleprev$Treatment = factor(rep(c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"),3), levels = c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"))
-
-#maleprev %>% ggplot(aes(x=Treatment, y=mean)) +
-#  geom_point() +
-#  geom_line(aes(x=Treatment, y=mean, group=Behavior)) +
-#  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-#  facet_wrap(~Behavior) +
-#  theme(axis.text.x = element_text(angle = 45)) +
-#  ylim(0,0.05)
-
+maleprev$Treatment = factor(rep(c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"),3), levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
 
 simprev <- rbind(femaleprev, maleprev)
-simprev$Sex <- c(rep("Female", 9), rep("Male", 9))
+simprev$Sex <- c(rep("Female", 15), rep("Male", 15))
 
 simprev %>% ggplot(aes(x=Treatment, y=mean, col=Sex)) +
   geom_point(size=3) +
@@ -111,49 +106,132 @@ kable(simprev) %>%
 ```
 
 # Incidence 
-## Females {.tabset}
+## Overall by Sex 
+```{r incid-avg}
+i.fem.s01 <- dat0[[2]][[1]]
+i.fem.s01 <- apply(i.fem.s01, 2, mean)
+i.male.s01 <- dat0[[2]][[2]]
+i.male.s01 <- apply(i.male.s01, 2, mean)
+
+i.fem.s02 <- dat02[[2]][[1]]
+i.fem.s02 <- apply(i.fem.s02, 2, mean)
+i.male.s02 <- dat02[[2]][[2]]
+i.male.s02 <- apply(i.male.s02, 2, mean)
+
+i.fem.s03 <- dat03[[2]][[1]]
+i.fem.s03 <- apply(i.fem.s03, 2, mean)
+i.male.s03 <- dat03[[2]][[2]]
+i.male.s03 <- apply(i.male.s03, 2, mean)
+
+i.fem.s1 <- apply(dat[[2]][[1]], 2, mean)
+i.male.s1 <- apply(dat[[2]][[2]], 2, mean)
+i.fem.s2 <- apply(dat2[[2]][[1]], 2, mean)
+i.male.s2 <- apply(dat2[[2]][[2]], 2, mean)
+i.fem.s3 <- apply(dat3[[2]][[1]], 2, mean)
+i.male.s3 <- apply(dat3[[2]][[2]], 2, mean)
+
+i.fem.s1ept <- apply(datept[[2]][[1]], 2, mean)
+i.male.s1ept <- apply(datept[[2]][[2]], 2, mean)
+i.fem.s2ept <- apply(dat2ept[[2]][[1]], 2, mean)
+i.male.s2ept <- apply(dat2ept[[2]][[2]], 2, mean)
+i.fem.s3ept <- apply(dat3ept[[2]][[1]], 2, mean)
+i.male.s3ept <- apply(dat3ept[[2]][[2]], 2, mean)
+
+i.fem.s1epthigh <- apply(datepthigh[[2]][[1]], 2, mean)
+i.male.s1epthigh <- apply(datepthigh[[2]][[2]], 2, mean)
+i.fem.s2epthigh <- apply(dat2epthigh[[2]][[1]], 2, mean)
+i.male.s2epthigh <- apply(dat2epthigh[[2]][[2]], 2, mean)
+i.fem.s3epthigh <- apply(dat3epthigh[[2]][[1]], 2, mean)
+i.male.s3epthigh <- apply(dat3epthigh[[2]][[2]], 2, mean)
+
+i.fem.s1ept1 <- apply(datept1[[2]][[1]], 2, mean)
+i.male.s1ept1 <-apply(datept1[[2]][[2]], 2, mean)
+i.fem.s2ept1 <- apply(dat2ept1[[2]][[1]], 2, mean)
+i.male.s2ept1 <- apply(dat2ept1[[2]][[2]], 2, mean)
+i.fem.s3ept1 <- apply(dat3ept1[[2]][[1]], 2, mean)
+i.male.s3ept1 <- apply(dat3ept1[[2]][[2]], 2, mean)
+
+fems <- rbind(i.fem.s01, i.fem.s02, i.fem.s03, 
+              i.fem.s1, i.fem.s2, i.fem.s3,
+              i.fem.s1ept, i.fem.s2ept, i.fem.s3ept,
+              i.fem.s1epthigh, i.fem.s2epthigh, i.fem.s3epthigh,
+              i.fem.s1ept1, i.fem.s2ept1, i.fem.s3ept1)
+
+males <- rbind(i.male.s01, i.male.s02, i.male.s03,
+              i.male.s1, i.male.s2, i.male.s3,
+              i.male.s1ept, i.male.s2ept, i.male.s3ept,
+              i.male.s1epthigh, i.male.s2epthigh, i.male.s3epthigh,
+              i.male.s1ept1, i.male.s2ept1, i.male.s3ept1)
+
+incid <- as.data.frame(rbind(fems, males))
+incid$Sex <- c(rep("Females", 15), rep("Males", 15))
+incid$Behavior <- factor(rep(c("M.F.Concurrency","Avg.Concurrency", "No.Concurrency"),5), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
+incid$Treatment <- factor(c(rep("No Partner Treatment", 3), rep("Low Partner Treatment", 3), rep("Medium Partner Treatment", 3), rep("High Partner Treatment", 3), rep("All Ongoing Partners", 3)), levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
+
+incid %>% ggplot(aes(x=Treatment, y=mean, col=Sex)) +
+  geom_point(size=2) +
+  geom_errorbar(aes(ymin=low, ymax=high), width=0.1)+
+  facet_wrap(~Behavior) +
+  ylab("Mean Incidence Rate") +
+  theme(axis.text.x = element_text(angle=45))
+
+incid %>% ggplot(aes(x=Behavior, y=mean, col=Sex)) +
+  geom_point(size=2) +
+  geom_errorbar(aes(ymin=low, ymax=high), width=0.1)+
+  facet_wrap(~Treatment, nrow=1) +
+  theme(axis.text.x = element_text(angle=45)) +
+  ylab("Mean Incidence Rate")
+```
+
+## Females by AgeCat{.tabset}
 ### Plot
 ```{r incid-female}
-dat <- irate(s1, start = 2000)
-dat2 <- irate(s2, start = 2000)
-dat3 <- irate(s3, start = 2000)
-datept <- irate(s1ept, start = 2000)
-dat2ept <- irate(s2ept, start = 2000)
-dat3ept <- irate(s3ept, start = 2000)
-datepthigh <- irate(s1epthigh, start = 2000)
-dat2epthigh <- irate(s2epthigh, start = 2000)
-dat3epthigh <- irate(s3epthigh, start = 2000)
+i.fem.s01 <- dat0[[2]][[1]]
+i.male.s01 <- dat0[[2]][[2]]
+i.fem.s02 <- dat02[[2]][[1]]
+i.male.s02 <- dat02[[2]][[2]]
+i.fem.s03 <- dat03[[2]][[1]]
+i.male.s03 <- dat03[[2]][[2]]
 
+i.fem.s1 <- dat[[2]][[1]]
+i.male.s1 <- dat[[2]][[2]]
+i.fem.s2 <- dat2[[2]][[1]]
+i.male.s2 <- dat2[[2]][[2]]
+i.fem.s3 <- dat3[[2]][[1]]
+i.male.s3 <- dat3[[2]][[2]]
 
-i.fem.s1 <- dat[[1]]
-i.male.s1 <- dat[[2]]
-i.fem.s2 <- dat2[[1]]
-i.male.s2 <- dat2[[2]]
-i.fem.s3 <- dat3[[1]]
-i.male.s3 <- dat3[[2]]
+i.fem.s1ept <- datept[[2]][[1]]
+i.male.s1ept <- datept[[2]][[2]]
+i.fem.s2ept <- dat2ept[[2]][[1]]
+i.male.s2ept <- dat2ept[[2]][[2]]
+i.fem.s3ept <- dat3ept[[2]][[1]]
+i.male.s3ept <- dat3ept[[2]][[2]]
 
-i.fem.s1ept <- datept[[1]]
-i.male.s1ept <- datept[[2]]
-i.fem.s2ept <- dat2ept[[1]]
-i.male.s2ept <- dat2ept[[2]]
-i.fem.s3ept <- dat3ept[[1]]
-i.male.s3ept <- dat3ept[[2]]
+i.fem.s1epthigh <- datepthigh[[2]][[1]]
+i.male.s1epthigh <- datepthigh[[2]][[2]]
+i.fem.s2epthigh <- dat2epthigh[[2]][[1]]
+i.male.s2epthigh <- dat2epthigh[[2]][[2]]
+i.fem.s3epthigh <- dat3epthigh[[2]][[1]]
+i.male.s3epthigh <- dat3epthigh[[2]][[2]]
 
-i.fem.s1epthigh <- datepthigh[[1]]
-i.male.s1epthigh <- datepthigh[[2]]
-i.fem.s2epthigh <- dat2epthigh[[1]]
-i.male.s2epthigh <- dat2epthigh[[2]]
-i.fem.s3epthigh <- dat3epthigh[[1]]
-i.male.s3epthigh <- dat3epthigh[[2]]
+i.fem.s1ept1 <- datept1[[2]][[1]]
+i.male.s1ept1 <- datept1[[2]][[2]]
+i.fem.s2ept1 <- dat2ept1[[2]][[1]]
+i.male.s2ept1 <- dat2ept1[[2]][[2]]
+i.fem.s3ept1 <- dat3ept1[[2]][[1]]
+i.male.s3ept1 <- dat3ept1[[2]][[2]]
 
-fems <- rbind(i.fem.s1, i.fem.s2, i.fem.s3,
+fems <- rbind(i.fem.s01, i.fem.s02, i.fem.s03, 
+              i.fem.s1, i.fem.s2, i.fem.s3,
               i.fem.s1ept, i.fem.s2ept, i.fem.s3ept,
-              i.fem.s1epthigh, i.fem.s2epthigh, i.fem.s3epthigh)
+              i.fem.s1epthigh, i.fem.s2epthigh, i.fem.s3epthigh,
+              i.fem.s1ept1, i.fem.s2ept1, i.fem.s3ept1)
 
-fems$Behavior <- factor(rep(c(rep("M.F.Concurrency", 6), rep("Avg.Concurrency", 6), rep("No.Concurrency", 6)),3), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
+fems$Behavior <- factor(rep(c(rep("M.F.Concurrency", 6), rep("Avg.Concurrency", 6), rep("No.Concurrency", 6)),5), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
 
-fems$Treatment <- factor(c(rep("Low Partner Treatment", 6*3), rep("Medium Partner Treatment", 6*3), rep("High Partner Treatment", 6*3)), levels=c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"))
-fems$AgeCat <- factor(rep(c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44"),9))
+fems$Treatment <- factor(c(rep("No Partner Treatment", 6*3), rep("Low Partner Treatment", 6*3), rep("Medium Partner Treatment", 6*3), rep("High Partner Treatment", 6*3), rep("All Ongoing Partners", 6*3)), levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
+
+fems$AgeCat <- factor(rep(c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44"),15))
 
 fems %>% ggplot(aes(x=AgeCat, y=mean, col=Treatment)) +
   geom_point() +
@@ -172,14 +250,17 @@ kable(fems) %>%
 ## Males {.tabset}
 ### Plot
 ```{r incid-male}
-males <- rbind(i.male.s1, i.male.s2, i.male.s3,
+males <- rbind(i.male.s01, i.male.s02, i.male.s03,
+              i.male.s1, i.male.s2, i.male.s3,
               i.male.s1ept, i.male.s2ept, i.male.s3ept,
-              i.male.s1epthigh, i.male.s2epthigh, i.male.s3epthigh)
+              i.male.s1epthigh, i.male.s2epthigh, i.male.s3epthigh,
+              i.male.s1ept1, i.male.s2ept1, i.male.s3ept1)
 
-males$Behavior <- factor(rep(c(rep("M.F.Concurrency", 6), rep("Avg.Concurrency", 6), rep("No.Concurrency", 6)),3), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
+males$Behavior <- factor(rep(c(rep("M.F.Concurrency", 6), rep("Avg.Concurrency", 6), rep("No.Concurrency", 6)),5), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
 
-males$Treatment <- factor(c(rep("Low Partner Treatment", 6*3), rep("Medium Partner Treatment", 6*3), rep("High Partner Treatment", 6*3)), levels=c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"))
-males$AgeCat <- factor(rep(c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44"),9))
+males$Treatment <- factor(c(rep("No Partner Treatment", 6*3), rep("Low Partner Treatment", 6*3), rep("Medium Partner Treatment", 6*3), rep("High Partner Treatment", 6*3), rep("All Ongoing Partners", 6*3)), levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
+
+males$AgeCat <- factor(rep(c("15-19", "20-24", "25-29", "30-34", "35-39", "40-44"),15))
 
 males %>% ggplot(aes(x=AgeCat, y=mean, col=Treatment)) +
   geom_point() +
@@ -196,6 +277,7 @@ kable(males) %>%
 ```
 
 ```{r prevcheck, eval=F}
+library(EpiModel)
 plot(s1, y=c("i.num.feml", "i.num.male"), legend=T) #2000
 plot(s1ept, y=c("i.num.feml", "i.num.male"), legend=T)
 plot(s1epthigh, y=c("i.num.feml", "i.num.male"), legend=T)
@@ -215,31 +297,22 @@ plot(s3epthigh, y=c("i.num.feml", "i.num.male"), legend=T)
 ## Females {.tabset}
 ### Plots
 ```{r reinfs-female}
-dat <- reinf(s1, start = 2000)
-dat2 <- reinf(s2, start = 2000)
-dat3 <- reinf(s3, start = 2000)
+r <- rbind(dat0[[3]][[1]], dat02[[3]][[1]], dat03[[3]][[1]],
+          dat[[3]][[1]], dat2[[3]][[1]], dat3[[3]][[1]],
+           datept[[3]][[1]], dat2ept[[3]][[1]], dat3ept[[3]][[1]],
+           datepthigh[[3]][[1]], dat2epthigh[[3]][[1]], dat3epthigh[[3]][[1]],
+           datept1[[3]][[1]], dat2ept1[[3]][[1]], dat3ept1[[3]][[1]])
 
-datept <- reinf(s1ept, start = 2000)
-dat2ept <- reinf(s2ept, start = 2000)
-dat3ept <- reinf(s3ept, start = 2000)
-
-datepthigh <- reinf(s1epthigh, start = 2000)
-dat2epthigh <- reinf(s2epthigh, start = 2000)
-dat3epthigh <- reinf(s3epthigh, start = 2000)
-
-r <- rbind(dat[[1]], dat2[[1]], dat3[[1]],
-           datept[[1]], dat2ept[[1]], dat3ept[[1]],
-           datepthigh[[1]], dat2epthigh[[1]], dat3epthigh[[1]])
-
-r$Behavior <- rep(c(rep("M.F.Concurrency",6), rep( "Avg.Concurrency",6), rep( "No.Concurrency",6)),3)
+r$Behavior <- rep(c(rep("M.F.Concurrency",6), rep( "Avg.Concurrency",6), rep( "No.Concurrency",6)),5)
 r$Behavior <- factor(r$Behavior, levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
 
-r$Treatment <- c(rep("Low Partner Treatment", 18), rep("Medium Partner Treatment", 18), rep("High Partner Treatment", 18))
-r$Treatment <- factor(r$Treatment, levels = c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"))
+r$Treatment <- c(rep("No Partner Treatment", 18), rep("Low Partner Treatment", 18), rep("Medium Partner Treatment", 18), rep("High Partner Treatment", 18), rep("All Ongoing Partners", 18))
 
-r$ReinfType <- rep(c(rep("W/O Diagnosis", 3), rep("Following Diagnosis",3)),9)
+r$Treatment <- factor(r$Treatment, levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
 
-r$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),18), levels = c("Three", "Six", "Twelve"))
+r$ReinfType <- rep(c(rep("Following Natural Recovery", 3), rep("Following Diagnosis and Recovery",3)),15)
+
+r$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),30), levels = c("Three", "Six", "Twelve"))
 
 
 r %>% filter(Behavior== "M.F.Concurrency") %>% 
@@ -293,19 +366,22 @@ kable(r) %>%
 ## Males {.tabset}
 ### Plots
 ```{r reinfs-male}
-r2 <- rbind(dat[[2]], dat2[[2]], dat3[[2]],
-           datept[[2]], dat2ept[[2]], dat3ept[[2]],
-           datepthigh[[2]], dat2epthigh[[2]], dat3epthigh[[2]])
+r2 <- rbind(dat0[[3]][[2]], dat02[[3]][[2]], dat03[[3]][[2]],
+            dat[[3]][[2]], dat2[[3]][[2]], dat3[[3]][[2]],
+           datept[[3]][[2]], dat2ept[[3]][[2]], dat3ept[[3]][[2]],
+           datepthigh[[3]][[2]], dat2epthigh[[3]][[2]], dat3epthigh[[3]][[2]],
+           datept1[[3]][[2]], dat2ept1[[3]][[2]], dat3ept1[[3]][[2]])
 
-r2$Behavior <- rep(c(rep("M.F.Concurrency",6), rep( "Avg.Concurrency",6), rep( "No.Concurrency",6)),3)
+r2$Behavior <- rep(c(rep("M.F.Concurrency",6), rep( "Avg.Concurrency",6), rep( "No.Concurrency",6)),5)
 r2$Behavior <- factor(r2$Behavior, levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
 
-r2$Treatment <- c(rep("Low Partner Treatment", 18), rep("Medium Partner Treatment", 18), rep("High Partner Treatment", 18))
-r2$Treatment <- factor(r2$Treatment, levels = c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"))
+r2$Treatment <- c(rep("No Partner Treatment", 18), rep("Low Partner Treatment", 18), rep("Medium Partner Treatment", 18), rep("High Partner Treatment", 18), rep("All Ongoing Partners", 18))
 
-r2$ReinfType <- rep(c(rep("W/O Diagnosis", 3), rep("Following Diagnosis",3)),9)
+r2$Treatment <- factor(r2$Treatment, levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
 
-r2$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),18), levels = c("Three", "Six", "Twelve"))
+r2$ReinfType <- rep(c(rep("Following Natural Recovery", 3), rep("Following Diagnosis and Recovery",3)),15)
+
+r2$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),30), levels = c("Three", "Six", "Twelve"))
 
 
 r2 %>% filter(Behavior== "M.F.Concurrency") %>% 
@@ -313,7 +389,7 @@ r2 %>% filter(Behavior== "M.F.Concurrency") %>%
   geom_point(size=2) +
   geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~Behavior+ReinfType, nrow=3)  +
+  facet_wrap(~ReinfType, nrow=1) +
   theme(axis.text.x = element_text(angle = 45)) +
   ylim(0,0.6) +
   ggtitle("Higher Male Concurrency")
@@ -323,7 +399,7 @@ r2 %>% filter(Behavior== "Avg.Concurrency") %>%
   geom_point(size=2) +
   geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~Behavior+ReinfType, nrow=3)  +
+  facet_wrap(~ReinfType, nrow=1) +
   theme(axis.text.x = element_text(angle = 45)) +
   ylim(0,0.6) +
   ggtitle("Average Concurrency")
@@ -333,7 +409,7 @@ r2 %>% filter(Behavior== "No.Concurrency") %>%
   geom_point(size=2) +
   geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~Behavior+ReinfType, nrow=3)  +
+  facet_wrap(~ReinfType, nrow=1) +
   theme(axis.text.x = element_text(angle = 45)) +
   ylim(0,0.6) +
   ggtitle("No Concurrency")
@@ -356,54 +432,139 @@ kable(r2) %>%
   kable_styling()
 ```
 
+## Among Diagnosed
+```{r reinfdiag}
+r3 <- rbind(r, r2)
+r3$Sex <- c(rep("Female", 90), rep("Male", 90))
+
+r3 %>% filter(ReinfType=="Following Diagnosis") %>% 
+  ggplot(aes(x=Treatment, y=mean, col=Reinfection)) +
+  geom_point(size=2) +
+ geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
+  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
+  facet_wrap(~Sex+Behavior, nrow=2)  +
+  theme(axis.text.x = element_text(angle = 45)) +
+  ylim(0,0.7)
+
+r3 %>% filter(Reinfection=="Three") %>% 
+  ggplot(aes(x=Treatment, y=mean, col=Sex)) +
+  geom_point(size=2) +
+ geom_line(aes(x=Treatment, y=mean, group=Sex)) + 
+  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
+  facet_wrap(~ReinfType+Behavior, nrow=2)  +
+  theme(axis.text.x = element_text(angle = 45)) +
+  ylim(0,0.5)
+```
+
+## 20-24
+```{r, eval=F}
+r20 <- rbind(dat0[[3]][[3]], dat02[[3]][[3]], dat03[[3]][[3]],
+          dat[[3]][[3]], dat2[[3]][[3]], dat3[[3]][[3]],
+           datept[[3]][[3]], dat2ept[[3]][[3]], dat3ept[[3]][[3]],
+           datepthigh[[3]][[3]], dat2epthigh[[3]][[3]], dat3epthigh[[3]][[3]],
+           datept1[[3]][[3]], dat2ept1[[3]][[3]], dat3ept1[[3]][[3]])
+
+r$Behavior <- rep(c(rep("M.F.Concurrency",6), rep( "Avg.Concurrency",6), rep( "No.Concurrency",6)),5)
+r$Behavior <- factor(r$Behavior, levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
+
+r$Treatment <- c(rep("No Partner Treatment", 18), rep("Low Partner Treatment", 18), rep("Medium Partner Treatment", 18), rep("High Partner Treatment", 18), rep("All Ongoing Partners", 18))
+
+r$Treatment <- factor(r$Treatment, levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
+
+r$ReinfType <- rep(c(rep("W/O Diagnosis", 3), rep("Following Diagnosis",3)),15)
+
+r$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),30), levels = c("Three", "Six", "Twelve"))
+
+m20 <- rbind(dat0[[3]][[4]], dat02[[3]][[4]], dat03[[3]][[4]],
+            dat[[3]][[4]], dat2[[3]][[4]], dat3[[3]][[4]],
+           datept[[3]][[4]], dat2ept[[3]][[4]], dat3ept[[3]][[4]],
+           datepthigh[[3]][[4]], dat2epthigh[[3]][[4]], dat3epthigh[[3]][[4]],
+           datept1[[3]][[4]], dat2ept1[[3]][[4]], dat3ept1[[3]][[4]])
+
+r2$Behavior <- rep(c(rep("M.F.Concurrency",6), rep( "Avg.Concurrency",6), rep( "No.Concurrency",6)),5)
+r2$Behavior <- factor(r2$Behavior, levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
+
+r2$Treatment <- c(rep("No Partner Treatment", 18), rep("Low Partner Treatment", 18), rep("Medium Partner Treatment", 18), rep("High Partner Treatment", 18), rep("All Ongoing Partners", 18))
+
+r2$Treatment <- factor(r2$Treatment, levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
+
+r2$ReinfType <- rep(c(rep("W/O Diagnosis", 3), rep("Following Diagnosis",3)),15)
+
+r2$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),30), levels = c("Three", "Six", "Twelve"))
+
+```
+```{r}
+r20 <- rbind(dat[[3]][[1]], dat[[3]][[3]], 
+             dat2[[3]][[1]], dat2[[3]][[3]], 
+             dat3[[3]][[1]], dat3[[3]][[3]])
+
+r20$Behavior <- c(rep("M.F.Concurrency",12), 
+                  rep( "Avg.Concurrency",12), 
+                  rep( "No.Concurrency",12))
+
+r20$Behavior <- factor(r20$Behavior, levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
+
+r20$Treatment <- rep("Low Partner Treatment", 36)
+
+r20$ReinfType <- rep(c(rep("Following Natural Recovery", 3), rep("Following Diagnosis and Recovery",3)),6)
+
+r20$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),6), levels = c("Three", "Six", "Twelve"))
+
+r20$Age <- rep(c(rep("All", 6), rep("2024",6)),3)
+
+m20 <- rbind(dat[[3]][[2]], dat[[3]][[4]], 
+             dat2[[3]][[2]], dat2[[3]][[4]], 
+             dat3[[3]][[2]], dat3[[3]][[4]])
+
+m20$Behavior <- c(rep("M.F.Concurrency",12), 
+                  rep( "Avg.Concurrency",12), 
+                  rep( "No.Concurrency",12))
+m20$Behavior <- factor(m20$Behavior, levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
+
+m20$Treatment <- rep("Low Partner Treatment", 36)
+
+m20$ReinfType <- rep(c(rep("W/O Diagnosis", 3), rep("Following Diagnosis",3)),6)
+
+m20$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),6), levels = c("Three", "Six", "Twelve"))
+
+m20$Age <- rep(c(rep("All", 6), rep("2024",6)),3)
+
+r4 <- rbind(r20, m20)
+r4$Sex <- c(rep("Female", 36), rep("Male", 36))
+
+r4 %>% filter(ReinfType=="Following Diagnosis") %>% 
+  ggplot(aes(x=Behavior, y=mean, col=Reinfection)) +
+  geom_point(size=2) +
+ geom_line(aes(x=Behavior, y=mean, group=Reinfection)) + 
+  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
+  facet_wrap(~Sex+Age, nrow=2)  +
+  theme(axis.text.x = element_text(angle = 45)) +
+  ylim(0,0.8)
+```
+
+
 # Proportion Ever Infected 
 cross-sectional - attr at end of sim 
 
 ```{r ever-inf}
-dat <- everInf(s1)
-dat2 <- everInf(s2)
-dat3 <- everInf(s3)
-datept <- everInf(s1ept)
-dat2ept <- everInf(s2ept)
-dat3ept <- everInf(s3ept)
-datepthigh <- everInf(s1epthigh)
-dat2epthigh <- everInf(s2epthigh)
-dat3epthigh <- everInf(s3epthigh)
+femaleEver <- rbind(dat0[[4]][[1]], dat[[4]][[1]], datept[[4]][[1]], datepthigh[[4]][[1]], datept1[[4]][[1]], 
+                    dat02[[4]][[1]], dat2[[4]][[1]], dat2ept[[4]][[1]], dat2epthigh[[4]][[1]], dat2ept1[[4]][[1]], 
+                    dat03[[4]][[1]], dat3[[4]][[1]], dat2ept[[4]][[1]], dat3epthigh[[4]][[1]], dat3ept1[[4]][[1]])
 
+femaleEver$Behavior <- factor(c(rep("M.F.Concurrency", 5), rep("Avg.Concurrency", 5), rep("No.Concurrency", 5)), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
 
-femaleEver <- rbind(dat[[1]], datept[[1]], datepthigh[[1]],
-                     dat2[[1]], dat2ept[[1]], dat2epthigh[[1]],
-                     dat3[[1]], dat2ept[[1]], dat3epthigh[[1]])
+femaleEver$Treatment = factor(rep(c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"),3), levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
 
-femaleEver$Behavior <- factor(c(rep("M.F.Concurrency", 3), rep("Avg.Concurrency", 3), rep("No.Concurrency", 3)), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
-femaleEver$Treatment = factor(rep(c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"),3), levels = c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"))
+maleEver <- rbind(dat0[[4]][[2]], dat[[4]][[2]], datept[[4]][[2]], datepthigh[[4]][[2]], datept1[[4]][[2]], 
+                    dat02[[4]][[2]], dat2[[4]][[2]], dat2ept[[4]][[2]], dat2epthigh[[4]][[2]], dat2ept1[[4]][[2]], 
+                    dat03[[4]][[2]], dat3[[4]][[2]], dat2ept[[4]][[2]], dat3epthigh[[4]][[2]], dat3ept1[[4]][[2]])
 
-#femaleprev %>% ggplot(aes(x=Treatment, y=mean)) +
-#  geom_point() +
-#  geom_line(aes(x=Treatment, y=mean, group=Behavior)) +
-#  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-#  facet_wrap(~Behavior) +
-#  theme(axis.text.x = element_text(angle = 45)) +
-#  ylim(0,0.05)
+maleEver$Behavior <- factor(c(rep("M.F.Concurrency", 5), rep("Avg.Concurrency", 5), rep("No.Concurrency", 5)), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
 
-maleEver <- rbind(dat[[2]], datept[[2]], datepthigh[[2]],
-                     dat2[[2]], dat2ept[[2]], dat2epthigh[[2]],
-                     dat3[[2]], dat2ept[[2]], dat3epthigh[[2]])
-
-maleEver$Behavior <- factor(c(rep("M.F.Concurrency", 3), rep("Avg.Concurrency", 3), rep("No.Concurrency", 3)), levels=c("M.F.Concurrency", "Avg.Concurrency", "No.Concurrency"))
-maleEver$Treatment = factor(rep(c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"),3), levels = c("Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment"))
-
-#maleprev %>% ggplot(aes(x=Treatment, y=mean)) +
-#  geom_point() +
-#  geom_line(aes(x=Treatment, y=mean, group=Behavior)) +
-#  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-#  facet_wrap(~Behavior) +
-#  theme(axis.text.x = element_text(angle = 45)) +
-#  ylim(0,0.05)
-
+maleEver$Treatment = factor(rep(c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"),3), levels = c("No Partner Treatment", "Low Partner Treatment", "Medium Partner Treatment", "High Partner Treatment", "All Ongoing Partners"))
 
 simEver<- rbind(femaleEver, maleEver)
-simEver$Sex <- c(rep("Female", 9), rep("Male", 9))
+simEver$Sex <- c(rep("Female", 15), rep("Male", 15))
 
 simEver %>% ggplot(aes(x=Treatment, y=mean, col=Sex)) +
   geom_point(size=3) +
@@ -411,5 +572,5 @@ simEver %>% ggplot(aes(x=Treatment, y=mean, col=Sex)) +
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
   facet_wrap(~Behavior) +
   theme(axis.text.x = element_text(angle = 45)) +
-  ylim(0,0.3)
+  ylim(0,0.35)
 ```

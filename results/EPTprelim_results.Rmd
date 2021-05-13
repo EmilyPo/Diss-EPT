@@ -11,7 +11,7 @@ output:
         code_folding: hide
 ---
 
-```{r s, include=FALSE}
+```{r s, include=FALSE, cache=T}
 #knitr::opts_chunk$set(echo = TRUE)
 library(here)
 library(kableExtra)
@@ -69,7 +69,9 @@ dat3ept1 <- analyze_sim(s3ept100, start = 2000)
 # Prevalence {.tabset}
 ## Plot
 ```{r prev}
+library(kableExtra)
 library(tidyverse)
+
 femaleprev <- rbind(dat0[[1]][[1]], dat[[1]][[1]], datept[[1]][[1]], datepthigh[[1]][[1]], datept1[[1]][[1]], 
                     dat02[[1]][[1]], dat2[[1]][[1]], dat2ept[[1]][[1]], dat2epthigh[[1]][[1]], dat2ept1[[1]][[1]], 
                     dat03[[1]][[1]], dat3[[1]][[1]], dat2ept[[1]][[1]], dat3epthigh[[1]][[1]], dat3ept1[[1]][[1]])
@@ -95,6 +97,14 @@ simprev %>% ggplot(aes(x=Treatment, y=mean, col=Sex)) +
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
   facet_wrap(~Behavior) +
   theme(axis.text.x = element_text(angle = 45)) +
+  ylim(0,0.05)
+
+simprev %>% ggplot(aes(x=Behavior, y=mean, col=Sex)) +
+  geom_point(size=3) +
+  geom_line(aes(x=Behavior, y=mean, group=Sex)) +
+  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
+  facet_wrap(~Treatment) +
+  theme(axis.text.x = element_text(angle = 45), legend.position="none") +
   ylim(0,0.05)
 ```
 
@@ -170,16 +180,18 @@ incid$Treatment <- factor(c(rep("No Partner Treatment", 3), rep("Low Partner Tre
 
 incid %>% ggplot(aes(x=Treatment, y=mean, col=Sex)) +
   geom_point(size=2) +
-  geom_errorbar(aes(ymin=low, ymax=high), width=0.1)+
+  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
+  geom_line(aes(x=Treatment, y=mean, group=Sex)) +
   facet_wrap(~Behavior) +
   ylab("Mean Incidence Rate") +
   theme(axis.text.x = element_text(angle=45))
 
 incid %>% ggplot(aes(x=Behavior, y=mean, col=Sex)) +
   geom_point(size=2) +
-  geom_errorbar(aes(ymin=low, ymax=high), width=0.1)+
+  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
+  geom_line(aes(x=Behavior, y=mean, group=Sex)) +
   facet_wrap(~Treatment, nrow=1) +
-  theme(axis.text.x = element_text(angle=45)) +
+  theme(axis.text.x = element_text(angle=45), legend.position="none") +
   ylab("Mean Incidence Rate")
 ```
 
@@ -315,40 +327,31 @@ r$ReinfType <- rep(c(rep("Following Natural Recovery", 3), rep("Following Diagno
 r$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),30), levels = c("Three", "Six", "Twelve"))
 
 
-r %>% filter(Behavior== "M.F.Concurrency") %>% 
+r %>% filter(ReinfType == "Following Diagnosis and Recovery") %>% 
   ggplot(aes(x=Treatment, y=mean, col=Reinfection)) +
   geom_point(size=2) +
   geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~ReinfType, nrow=1)  +
+  facet_wrap(~Behavior)  +
   theme(axis.text.x = element_text(angle = 45)) +
   ylim(0,0.6) +
-  ggtitle("Higher Male Concurrency")
+  ggtitle("Following Diagnosis and Recovery")
 
-r %>% filter(Behavior== "Avg.Concurrency") %>% 
+r %>% filter(ReinfType == "Following Natural Recovery") %>% 
   ggplot(aes(x=Treatment, y=mean, col=Reinfection)) +
   geom_point(size=2) +
   geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~ReinfType, nrow=1)  +
+  facet_wrap(~Behavior)  +
   theme(axis.text.x = element_text(angle = 45)) +
   ylim(0,0.6) +
-  ggtitle("Average Concurrency")
+  ggtitle("Following Natural Recovery")
 
-r %>% filter(Behavior== "No.Concurrency") %>% 
-  ggplot(aes(x=Treatment, y=mean, col=Reinfection)) +
-  geom_point(size=2) +
-  geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
-  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~ReinfType, nrow=1)  +
-  theme(axis.text.x = element_text(angle = 45)) +
-  ylim(0,0.6) +
-  ggtitle("No Concurrency")
 
 r %>% filter(Reinfection== "Three") %>% 
   ggplot(aes(x=Behavior, y=mean, col=Treatment)) +
   geom_point(size=2) +
-  #geom_line(aes(x=Behavior, y=mean, group=Treatment)) + 
+  geom_line(aes(x=Behavior, y=mean, group=Treatment)) + 
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
   facet_wrap(~ReinfType, nrow=1)  +
   theme(axis.text.x = element_text(angle = 45)) +
@@ -384,40 +387,31 @@ r2$ReinfType <- rep(c(rep("Following Natural Recovery", 3), rep("Following Diagn
 r2$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),30), levels = c("Three", "Six", "Twelve"))
 
 
-r2 %>% filter(Behavior== "M.F.Concurrency") %>% 
+r2 %>% filter(ReinfType == "Following Diagnosis and Recovery") %>% 
   ggplot(aes(x=Treatment, y=mean, col=Reinfection)) +
   geom_point(size=2) +
   geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~ReinfType, nrow=1) +
+  facet_wrap(~Behavior)  +
   theme(axis.text.x = element_text(angle = 45)) +
   ylim(0,0.6) +
-  ggtitle("Higher Male Concurrency")
+  ggtitle("Following Diagnosis and Recovery")
 
-r2 %>% filter(Behavior== "Avg.Concurrency") %>% 
+r2 %>% filter(ReinfType == "Following Natural Recovery") %>% 
   ggplot(aes(x=Treatment, y=mean, col=Reinfection)) +
   geom_point(size=2) +
   geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~ReinfType, nrow=1) +
+  facet_wrap(~Behavior)  +
   theme(axis.text.x = element_text(angle = 45)) +
   ylim(0,0.6) +
-  ggtitle("Average Concurrency")
+  ggtitle("Following Natural Recovery")
 
-r2 %>% filter(Behavior== "No.Concurrency") %>% 
-  ggplot(aes(x=Treatment, y=mean, col=Reinfection)) +
-  geom_point(size=2) +
-  geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
-  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~ReinfType, nrow=1) +
-  theme(axis.text.x = element_text(angle = 45)) +
-  ylim(0,0.6) +
-  ggtitle("No Concurrency")
 
-r2 %>% filter(Reinfection=="Three") %>% 
+r2 %>% filter(Reinfection== "Three") %>% 
   ggplot(aes(x=Behavior, y=mean, col=Treatment)) +
   geom_point(size=2) +
- # geom_line(aes(x=Behavior, y=mean, group=Treatment)) + 
+  geom_line(aes(x=Behavior, y=mean, group=Treatment)) + 
   geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
   facet_wrap(~ReinfType, nrow=1)  +
   theme(axis.text.x = element_text(angle = 45)) +
@@ -437,15 +431,6 @@ kable(r2) %>%
 r3 <- rbind(r, r2)
 r3$Sex <- c(rep("Female", 90), rep("Male", 90))
 
-r3 %>% filter(ReinfType=="Following Diagnosis") %>% 
-  ggplot(aes(x=Treatment, y=mean, col=Reinfection)) +
-  geom_point(size=2) +
- geom_line(aes(x=Treatment, y=mean, group=Reinfection)) + 
-  geom_errorbar(aes(ymin=low, ymax=high), width=0.1) +
-  facet_wrap(~Sex+Behavior, nrow=2)  +
-  theme(axis.text.x = element_text(angle = 45)) +
-  ylim(0,0.7)
-
 r3 %>% filter(Reinfection=="Three") %>% 
   ggplot(aes(x=Treatment, y=mean, col=Sex)) +
   geom_point(size=2) +
@@ -456,8 +441,9 @@ r3 %>% filter(Reinfection=="Three") %>%
   ylim(0,0.5)
 ```
 
-## 20-24
+
 ```{r, eval=F}
+## 20-24
 r20 <- rbind(dat0[[3]][[3]], dat02[[3]][[3]], dat03[[3]][[3]],
           dat[[3]][[3]], dat2[[3]][[3]], dat3[[3]][[3]],
            datept[[3]][[3]], dat2ept[[3]][[3]], dat3ept[[3]][[3]],
@@ -493,7 +479,7 @@ r2$ReinfType <- rep(c(rep("W/O Diagnosis", 3), rep("Following Diagnosis",3)),15)
 r2$Reinfection <- factor(rep(c("Twelve", "Six", "Three"),30), levels = c("Three", "Six", "Twelve"))
 
 ```
-```{r}
+```{r, eval=F}
 r20 <- rbind(dat[[3]][[1]], dat[[3]][[3]], 
              dat2[[3]][[1]], dat2[[3]][[3]], 
              dat3[[3]][[1]], dat3[[3]][[3]])
@@ -544,7 +530,6 @@ r4 %>% filter(ReinfType=="Following Diagnosis") %>%
 
 
 # Proportion Ever Infected 
-cross-sectional - attr at end of sim 
 
 ```{r ever-inf}
 femaleEver <- rbind(dat0[[4]][[1]], dat[[4]][[1]], datept[[4]][[1]], datepthigh[[4]][[1]], datept1[[4]][[1]], 

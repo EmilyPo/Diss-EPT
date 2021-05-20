@@ -21,7 +21,7 @@ sim.base <- netsim(nets,
                    init = init_het_ct(),
                    control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.base, here("sims", "may2", "noeptsex", "simBase.rds"))
+saveRDS(sim.base, here("sims", "may2", "noeptsex", "simBase2.rds"))
 rm(sim.base)
 
 sim.base.ept <- netsim(nets,
@@ -120,7 +120,7 @@ sim.nc.0 <- netsim(nets,
                     init = init_het_ct(),
                     control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.nc.0, here("sims", "may2", "noeptsex",  "noeptsex",  "simNc0.rds"))
+saveRDS(sim.nc.0, here("sims", "may2", "noeptsex", "simNc0.rds"))
 rm(sim.nc.0)
 
 sim.nc <- netsim(nets,
@@ -128,7 +128,7 @@ sim.nc <- netsim(nets,
                   init = init_het_ct(),
                   control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.nc, here("sims", "may2", "noeptsex",  "noeptsex",  "simNc.rds"))
+saveRDS(sim.nc, here("sims", "may2", "noeptsex", "simNc.rds"))
 rm(sim.nc)
 
 sim.nc.ept <- netsim(nets,
@@ -166,9 +166,6 @@ saveRDS(sim.nc.ept.100ong, here("sims", "may2",  "noeptsex",  "simNcEPT100ong.rd
 rm(sim.nc.ept.100ong)
 rm(nets)
 
-
-
-
 ## -------- NO PREVIOUS PARTERS, ALL CURRENT PARTNERS -----------------
 #### Concurrency By Sex ####
 nets <- readRDS(here("fits", "calibrated_netests.rds"))
@@ -180,7 +177,7 @@ sim.base.0 <- netsim(nets,
                      init = init_het_ct(),
                      control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.base.0, here("sims", "may2", "noeptsex", "simBase0.rds"))
+saveRDS(sim.base.0, here("sims", "may2", "current", "simBase02.rds"))
 rm(sim.base.0)
 
 sim.base <- netsim(nets,
@@ -190,7 +187,7 @@ sim.base <- netsim(nets,
                    init = init_het_ct(),
                    control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.base, here("sims", "may2", "current", "simBase.rds"))
+saveRDS(sim.base, here("sims", "may2", "current", "simBase2.rds"))
 rm(sim.base)
 
 sim.base.ept <- netsim(nets,
@@ -200,7 +197,7 @@ sim.base.ept <- netsim(nets,
                        init = init_het_ct(),
                        control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.base.ept, here("sims", "may2", "current", "simBaseEPT.rds"))
+saveRDS(sim.base.ept, here("sims", "may2", "current", "simBaseEPT2.rds"))
 rm(sim.base.ept)
 
 sim.base.ept.high <- netsim(nets,
@@ -210,7 +207,7 @@ sim.base.ept.high <- netsim(nets,
                             init = init_het_ct(),
                             control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.base.ept.high, here("sims", "may2", "current", "simBaseEPThigh.rds"))
+saveRDS(sim.base.ept.high, here("sims", "may2", "current", "simBaseEPThigh2.rds"))
 rm(sim.base.ept.high)
 
 sim.base.ept.100 <- netsim(nets,
@@ -220,7 +217,7 @@ sim.base.ept.100 <- netsim(nets,
                                init = init_het_ct(),
                                control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.base.ept.100, here("sims", "may2", "current", "simBaseEPT100.rds"))
+saveRDS(sim.base.ept.100, here("sims", "may2", "current", "simBaseEPT1002.rds"))
 rm(sim.base.ept.100)
 rm(nets)
 
@@ -290,7 +287,7 @@ sim.nc.0 <- netsim(nets,
                    init = init_het_ct(),
                    control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.nc.0, here("sims", "may2", "current",  "current",  "simNc0.rds"))
+saveRDS(sim.nc.0, here("sims", "may2", "current", "simNc02.rds"))
 rm(sim.nc.0)
 
 sim.nc <- netsim(nets,
@@ -300,7 +297,7 @@ sim.nc <- netsim(nets,
                  init = init_het_ct(),
                  control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.nc, here("sims", "may2", "current",  "current",  "simNc.rds"))
+saveRDS(sim.nc, here("sims", "may2", "current", "simNc2.rds"))
 rm(sim.nc)
 
 sim.nc.ept <- netsim(nets,
@@ -310,7 +307,7 @@ sim.nc.ept <- netsim(nets,
                      init = init_het_ct(),
                      control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.nc.ept, here("sims", "may2",  "current",  "simNcEPT.rds"))
+saveRDS(sim.nc.ept, here("sims", "may2",  "current",  "simNcEPT2.rds"))
 rm(sim.nc.ept)
 
 sim.nc.ept.high <- netsim(nets,
@@ -320,7 +317,7 @@ sim.nc.ept.high <- netsim(nets,
                           init = init_het_ct(),
                           control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.nc.ept.high, here("sims", "may2",  "current",  "simNcEPThigh.rds"))
+saveRDS(sim.nc.ept.high, here("sims", "may2",  "current",  "simNcEPThigh2.rds"))
 rm(sim.nc.ept.high)
 
 sim.nc.ept.100 <- netsim(nets,
@@ -330,7 +327,7 @@ sim.nc.ept.100 <- netsim(nets,
                              init = init_het_ct(),
                              control = control_het_ct(nsims = 5, nsteps=52*80, ncores=5))
 
-saveRDS(sim.nc.ept.100, here("sims", "may2",  "current",  "simNcEPT100.rds"))
+saveRDS(sim.nc.ept.100, here("sims", "may2",  "current",  "simNcEPT1002.rds"))
 rm(sim.nc.ept.100)
 
 
